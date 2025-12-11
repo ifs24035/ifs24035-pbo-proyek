@@ -1,0 +1,465 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Dashboard - Petshop Delcom</title>
+    <link rel="icon" type="image/png" href="/assets/images/hewan-new.png">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome untuk Ikon (Opsional tapi bagus) -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <!-- Google Fonts: Fredoka (Lucu) & Poppins (Modern) -->
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600&family=Poppins:wght@300;400;500&display=swap" rel="stylesheet">
+    
+    <!-- Chart JS -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Plugin untuk Persentase Chart -->
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
+    
+    <style>
+        .pet-thumb {
+            width: 50px;
+            height: 50px;       /* Pastikan tinggi dan lebar sama */
+            border-radius: 50%; /* Membuat lingkaran */
+            object-fit: cover;  /* Agar foto tidak gepeng */
+        }
+        
+        .welcome-card {
+        background: linear-gradient(135deg, #faf7ff, #ffffff);
+        border: 1px solid #eee;
+        position: relative;
+    }
+
+    /* Paw decorations repositioned further to avoid overlapping text */
+    .paw-deco-1,
+    .paw-deco-2 {
+        position: absolute;
+        font-size: 160px;
+        color: #d7c6ff;
+        opacity: 0.25;
+        z-index: 0;
+    }
+
+    .paw-deco-1 {
+        bottom: -40px;
+        left: -20px; 
+    }
+
+    .paw-deco-2 {
+        top: -45px;
+        right: -25px;
+    }
+
+    .welcome-title {
+        font-size: 2rem;
+        color: #3b2e5a;
+        letter-spacing: 0.5px;
+    }
+
+    .welcome-text {
+        font-size: 0.95rem;
+    }
+
+    /* Wrapper Chart: Diperbesar tingginya */
+    /* 1. Class Baru: Agar ISI KOTAK (Chart+Legend) pas di tengah vertikal */
+    .card-body-flex {
+        display: flex;
+        flex-direction: column;
+        justify-content: center; /* Menengahkan secara vertikal */
+        align-items: center;     /* Menengahkan secara horizontal */
+        min-height: 450px;       /* Paksa tinggi minimal agar ada ruang untuk centering */
+        height: 100%;
+    }
+
+    /* 2. Wrapper Chart */
+    .chart-container {
+        position: relative;
+        height: 320px; 
+        width: 100%;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+    }
+
+    /* Ikon di Tengah (LAYER BELAKANG) */
+    .chart-center-icon {
+        position: absolute;
+        left: 50.5%;
+        /* Atur tinggi rendahnya logo di sini (40% biasanya pas di tengah donat) */
+        top: 37.5%; 
+        transform: translate(-50%, -50%);
+        font-size: 6rem; 
+        color: #e8dcff; /* Ungu Soft */
+        
+        /* UPDATE PENTING DI SINI: */
+        z-index: 0; /* Lapisan paling bawah */
+        pointer-events: none; /* Agar mouse tembus ke chart (tidak menghalangi tooltip) */
+    }
+
+    /* Canvas Chart (LAYER DEPAN) */
+    #petChart {
+        width: 100% !important;
+        height: 100% !important;
+        
+        /* UPDATE PENTING DI SINI: */
+        position: relative; /* Wajib ada agar z-index berfungsi */
+        z-index: 10; /* Angka lebih besar = Posisi di depan ikon */
+    }
+    </style>
+</head>
+<body class="bg-light">
+
+<nav class="navbar navbar-expand-lg navbar-light nav-elegant shadow-sm mb-4">
+    <div class="container">
+
+        <!-- Brand -->
+        <a class="navbar-brand fw-bold d-flex align-items-center" href="/">
+            <i class="fas fa-paw me-2"></i>
+            Nuel’s Pawtopia
+        </a>
+
+        <!-- Toggle mobile -->
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+
+        <div class="collapse navbar-collapse" id="navbarNav">
+
+            <!-- Menu kiri -->
+            <ul class="navbar-nav me-auto">
+                <li class="nav-item">
+                    <a class="nav-link nav-link-elegant" href="/about">
+                        <i class="fas fa-info-circle me-1"></i>Tentang Kami
+                    </a>
+                </li>
+            </ul>
+
+            <!-- Logout -->
+            <div class="d-flex">
+                <a href="/auth/logout" class="btn btn-logout-elegant btn-sm px-3">
+                    <i class="fas fa-sign-out-alt me-1"></i>Keluar
+                </a>
+            </div>
+
+        </div>
+    </div>
+</nav>
+
+<!-- Tambahkan sedikit CSS di bagian <style> home.html agar efek hover link bagus -->
+<!-- Jika belum ada, tambahkan di dalam <head> home.html -->
+<style>
+/* Navbar soft elegant */
+.nav-elegant {
+    background: linear-gradient(135deg, #f4efff, #ffffff);
+    border-bottom: 1px solid #e8dcff;
+}
+
+/* Brand style */
+.navbar-brand {
+    color: #4a3b73 !important;
+    font-size: 1.25rem;
+    letter-spacing: 0.5px;
+}
+
+/* Nav link */
+.nav-link-elegant {
+    color: #6a5a99 !important;
+    opacity: 0.85;
+    transition: 0.25s ease;
+}
+
+.nav-link-elegant:hover {
+    opacity: 1;
+    color: #4a3b73 !important;
+    text-decoration: none;
+}
+
+/* Logout button */
+.btn-logout-elegant {
+    background-color: #d76aa0;
+    border: none;
+    color: white;
+    transition: 0.25s ease;
+}
+
+.btn-logout-elegant:hover {
+    background-color: #c4588f;
+    color: #fff;
+}
+
+/* Override toggler icon agar cocok tema */
+.navbar-light .navbar-toggler-icon {
+    filter: brightness(0.6);
+}
+
+/* ===== Tampilan Dashboard (Matching warna ungu elegan) ===== */
+
+/* Card header */
+.card-header {
+    border-bottom: 1px solid #e8dcff !important;
+    color: #4a3b73 !important;
+    background: #f9f6ff !important;
+}
+
+/* Table header */
+.table-light {
+    background: #f2ecff !important;
+    color: #4a3b73 !important;
+    border-color: #e8dcff !important;
+}
+
+/* Hover row */
+.table-hover tbody tr:hover {
+    background-color: #faf7ff !important;
+}
+
+/* Button primary update (biar serasi tema) */
+.btn-primary {
+    background-color: #7b5edb !important;
+    border-color: #6a4ec9 !important;
+}
+
+.btn-primary:hover {
+    background-color: #6a4ec9 !important;
+}
+
+/* Badge warna hijau/kuning/merah tetap—tidak diubah */
+/* Badge kode pet (yang kecil) */
+.badge.bg-light.text-dark {
+    background-color: #f7f2ff !important;
+    border-color: #d9caff !important;
+}
+
+/* Card body & border */
+.card {
+    border: 1px solid #e8dcff !important;
+}
+
+/* Footer style */
+.footer-info {
+    text-align: center;
+    margin-top: 40px;
+    margin-bottom: 15px;
+    font-size: 0.85rem;
+    color: #8d7fb8;
+}
+</style>
+
+
+<div class="container">
+    <!-- Banner Selamat Datang - Elegant Style -->
+<div class="welcome-card p-4 p-md-5 mb-4 position-relative overflow-hidden rounded-4 shadow-sm">
+
+    <!-- Paw Decorations - repositioned -->
+    <i class="fas fa-paw paw-deco-1"></i>
+    <i class="fas fa-paw paw-deco-2"></i>
+
+    <div class="position-relative z-1">
+        <h1 class="welcome-title mb-2 fw-bold">
+            Selamat Datang, <span th:text="${userName}">Admin</span>.
+        </h1>
+
+        <p class="welcome-text mb-1 text-muted">
+            Anda sedang berada di Dashboard <strong>Nuel’s Pawtopia</strong>.
+        </p>
+
+        <p class="welcome-text small fst-italic text-secondary">
+            "Tempat terbaik bagi kenyamanan dan kebahagiaan hewan kesayangan Anda."
+        </p>
+    </div>
+</div>
+
+    <!-- Feedback Message -->
+    <div th:if="${success}" class="alert alert-success alert-dismissible fade show" role="alert">
+        <span th:text="${success}"></span>
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+
+    <div class="row">
+        <!-- Chart Section -->
+        <div class="col-lg-4 mb-4">
+            <div class="card shadow-sm border-0 h-100">
+                <div class="card-header bg-white fw-bold">Statistik Hewan</div>
+                
+                <!-- PERUBAHAN DISINI: Tambahkan class 'card-body-flex' -->
+                <div class="card-body card-body-flex p-3">
+                    
+                    <div class="chart-container">
+                        <!-- Ikon Tengah -->
+                        <div class="chart-center-icon">
+                            <i class="fas fa-paw"></i>
+                        </div>
+
+                        <!-- Canvas Chart -->
+                        <canvas id="petChart"></canvas>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+
+        <!-- List Section -->
+        <div class="col-lg-8">
+            <div class="card shadow-sm border-0">
+                <div class="card-header bg-white d-flex justify-content-between align-items-center py-3">
+                    <h5 class="mb-0 fw-bold">Daftar Hewan Titipan</h5>
+                    <a href="/pets/add" class="btn btn-primary btn-sm"><i class="fas fa-plus"></i> Tambah Data</a>
+                </div>
+                <div class="card-body p-0 table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-light">
+                            <!-- UPDATE: Class 'text-center' ditambahkan agar judul kolom rata tengah -->
+                            <tr class="text-center">
+                                <th style="width: 25%;">Jenis</th>
+                                <th style="width: 25%;">Pemilik</th>
+                                <th style="width: 20%;">Status</th>
+                                <th>Biaya</th>
+                                <th>Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr th:each="pet : ${pets}">
+                                <!-- Kolom Jenis (Tetap Rata Kiri karena ada Gambar) -->
+                                <td class="text-start ps-4">
+                                    <div class="d-flex align-items-center">
+                                        <!-- Gambar -->
+                                         <div class="me-3">
+                                            <!-- 1. Jika User Upload Foto -->
+                                            <img th:if="${pet.imagePath}" 
+                                                 th:src="@{'/uploads/' + ${pet.imagePath}}" 
+                                                 class="pet-thumb shadow-sm border" 
+                                                 alt="Foto Hewan"
+                                                 style="object-fit: cover;">
+                                            
+                                            <!-- 2. Jika Tidak Ada Foto (Tampilkan Ikon Default Rapi) -->
+                                            <div th:unless="${pet.imagePath}" 
+                                                 class="pet-thumb shadow-sm border bg-light d-flex align-items-center justify-content-center text-secondary">
+                                                <i class="fas fa-paw fa-lg"></i>
+                                            </div>
+                                        </div>
+                                        
+                                        <!-- Info Jenis & Kode -->
+                                        <div>
+                                            <span class="fw-bold text-dark" th:text="${pet.petType}">Anjing</span>
+                                            <br>
+                                            <!-- UPDATE: Menampilkan KODE UNIK (petCode) menggantikan Kategori -->
+                                            <small class="badge bg-light text-dark border border-secondary fw-normal mt-1" 
+                                                   th:text="${pet.petCode}">ANJ-S-001</small>
+                                            
+                                            <!-- Jumlah Ekor -->
+                                            <small class="text-secondary d-block mt-1" style="font-size: 11px;" 
+                                                   th:text="${pet.quantity + ' Ekor'}">1 Ekor</small>
+                                        </div>
+                                    </div>
+                                </td>
+
+                                <!-- Kolom Pemilik (Agak ke kiri sedikit agar rapi, tapi sejajar header) -->
+                                <td class="text-center"> 
+                                    <!-- Saya buat text-center agar pas di tengah kolom, 
+                                         tapi text-align div nya start agar nama & no hp lurus -->
+                                    <div class="d-inline-block text-start">
+                                        <span class="fw-semibold d-block" th:text="${pet.ownerName}">Budi</span>
+                                        <small class="text-muted">
+                                            <i class="fas fa-phone-alt fa-xs me-1"></i>
+                                            <span th:text="${pet.ownerPhone}">0812...</span>
+                                        </small>
+                                    </div>
+                                </td>
+
+                                <!-- Kolom Status (Rata Tengah) -->
+                                <td class="text-center">
+                                    <span class="badge rounded-pill" 
+                                          th:classappend="'bg-' + ${pet.getStatusColor()}"
+                                          th:text="${pet.getStatusLabel()}">
+                                        Status
+                                    </span>
+                                    <br>
+                                    <small class="text-secondary" style="font-size: 0.75rem;" 
+                                           th:text="${#temporals.format(pet.createdAt, 'dd MMM yyyy')}">
+                                    </small>
+                                </td>
+
+                                <!-- Kolom Biaya (Rata Tengah) -->
+                                <td class="text-center fw-bold text-success" th:text="'Rp ' + ${pet.getEstimatedCost()}">Rp 0</td>
+                                
+                                <!-- Kolom Aksi (Rata Tengah) -->
+                                <td class="text-center">
+                                    <a th:href="@{/pets/{id}(id=${pet.id})}" class="btn btn-sm btn-outline-info px-3">Detail</a>
+                                </td>
+                            </tr>
+                            
+                            <!-- Jika Data Kosong -->
+                            <tr th:if="${#lists.isEmpty(pets)}">
+                                <td colspan="5" class="text-center py-4 text-muted">Belum ada data hewan dititipkan.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Script Chart Update -->
+<script th:inline="javascript">
+    /*<![CDATA[*/
+    // Daftarkan Plugin Datalabels
+    Chart.register(ChartDataLabels);
+
+    const labels = /*[[${chartLabels}]]*/ [];
+    const data = /*[[${chartData}]]*/ [];
+    const ctx = document.getElementById('petChart').getContext('2d');
+
+    if (labels.length > 0) {
+        new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: labels,
+                datasets: [{
+                    data: data,
+                    backgroundColor: ['#230C33', '#1cc88a', '#36b9cc', '#f6c23e', '#e74a3b', '#A55EEA', '#FF6FB5', '#C1436A'],
+                    borderWidth: 2,
+                    borderColor: '#ffffff'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false, // WAJIB FALSE agar chart bisa membesar sesuai container height
+                cutout: '70%', // Lubang donat diperbesar agar ikon muat
+                layout: {
+                    padding: 10
+                },
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: { 
+                            boxWidth: 12, 
+                            padding: 20,
+                            font: { size: 11 } 
+                        }
+                    },
+                    datalabels: {
+                        color: '#fff',
+                        font: { weight: 'bold', size: 12 },
+                        formatter: (value, ctx) => {
+                            let sum = 0;
+                            let dataArr = ctx.chart.data.datasets[0].data;
+                            dataArr.map(data => { sum += data; });
+                            // Cegah pembagian nol
+                            if (sum === 0) return "0%";
+                            let percentage = (value * 100 / sum).toFixed(0) + "%";
+                            return percentage;
+                        }
+                    }
+                }
+            }
+        });
+    } else {
+        ctx.font = "14px Arial";
+        ctx.fillText("Data Kosong", 50, 75);
+    }
+    /*]]>*/
+</script>
+<div class="footer-info">
+    © 2025 Nuel’s Pawtopia System. All Rights Reserved.
+</div>
+</body>
+</html>

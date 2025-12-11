@@ -1,0 +1,65 @@
+<div th:fragment="addTodoModal">
+  <form th:action="@{/todos/add}" method="post" th:object="${todoForm}">
+    <div class="modal fade" id="addTodoModal" tabindex="-1">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">Tambah Todo</h5>
+            <button
+              type="button"
+              class="btn-close"
+              data-bs-dismiss="modal"
+            ></button>
+          </div>
+
+          <div class="modal-body">
+            <!-- JUDUL -->
+            <div class="mb-3">
+              <label for="addTodoTitle" class="form-label">Judul</label>
+              <input
+                id="addTodoTitle"
+                type="text"
+                class="form-control"
+                th:field="*{title}"
+              />
+              <div
+                class="text-danger"
+                th:if="${#fields.hasErrors('title')}"
+                th:errors="*{title}"
+              ></div>
+            </div>
+
+            <!-- DESKRIPSI -->
+            <div class="mb-3">
+              <label for="addTodoDescription" class="form-label"
+                >Deskripsi</label
+              >
+              <textarea
+                id="addTodoDescription"
+                class="form-control"
+                rows="4"
+                th:field="*{description}"
+              ></textarea>
+              <div
+                class="text-danger"
+                th:if="${#fields.hasErrors('description')}"
+                th:errors="*{description}"
+              ></div>
+            </div>
+          </div>
+
+          <div class="modal-footer">
+            <button
+              type="button"
+              class="btn btn-secondary"
+              data-bs-dismiss="modal"
+            >
+              Batal
+            </button>
+            <button type="submit" class="btn btn-primary">Simpan</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </form>
+</div>

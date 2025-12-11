@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Tambah Hewan</title>
+    <link rel="icon" type="image/png" href="/assets/images/hewan-new.png">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            background-color: #F4EEF8; /* soft pastel purple */
+        }
+        .card {
+            border-radius: 18px;
+        }
+        .card-header {
+            background: linear-gradient(90deg, #6A4C93, #8E6CC4); /* elegant purple gradient */
+        }
+        .btn-primary {
+            background-color: #6A4C93 !important;
+            border-color: #6A4C93 !important;
+        }
+        .btn-primary:hover {
+            background-color: #5A3F80 !important;
+        }
+        .form-label {
+            color: #4A3B66;
+        }
+        .form-control, .form-select {
+            border-radius: 12px;
+            border-color: #C9BCE3;
+        }
+        .form-control:focus, .form-select:focus {
+            border-color: #8E6CC4;
+            box-shadow: 0 0 5px rgba(142,108,196,0.5);
+        }
+        .btn-link {
+            color: #6A4C93;
+        }
+        .btn-link:hover {
+            color: #533A77;
+        }
+    </style>
+</head>
+<body>
+<div class="container mt-5" style="max-width: 600px;">
+    <div class="card shadow">
+        <div class="card-header text-white fw-bold">Tambah Data Hewan</div>
+        <div class="card-body">
+            <form th:action="@{/pets/add}" th:object="${pet}" method="post">
+                
+                <!-- 1. PILIH JENIS UTAMA -->
+                <div class="mb-3">
+                    <label class="form-label fw-bold">Jenis Hewan</label>
+                    <select class="form-select" id="typeSelect" th:field="*{petType}" onchange="handleTypeChange()" required>
+                        <option value="" selected disabled>-- Pilih Jenis --</option>
+                        <option value="Anjing">Anjing</option>
+                        <option value="Kucing">Kucing</option>
+                        <option value="Burung">Burung</option>
+                        <option value="Kelinci">Kelinci</option>
+                        <option value="Hamster">Hamster</option>
+                        <option value="Marmut">Marmut</option>
+                        <option value="Lainnya">Lainnya (Reptil dll)</option>
+                    </select>
+                </div>
+
+                <!-- Kategori ANJING -->
+                <div class="mb-3" id="anjingCategoryDiv" style="display: none;">
+                    <label class="form-label fw-bold">Kriteria Anjing</label>
+                    <select class="form-select" id="anjingCat" name="petCategory">
+                        <option value="" disabled selected>-- Pilih Ukuran --</option>
+                        <option value="Kecil">Kecil (Rp 2.700/jam)</option>
+                        <option value="Sedang">Sedang (Rp 4.200/jam)</option>
+                        <option value="Besar">Besar (Rp 7.700/jam)</option>
+                    </select>
+                </div>
+
+                <!-- Kategori KUCING -->
+                <div class="mb-3" id="kucingCategoryDiv" style="display: none;">
+                    <label class="form-label fw-bold">Kriteria Kucing</label>
+                    <select class="form-select" id="kucingCat" name="petCategory">
+                        <option value="" disabled selected>-- Pilih Kelas --</option>
+                        <option value="Standar">Standar (Rp 1.700/jam)</option>
+                        <option value="Premium">Premium (Rp 3.800/jam)</option>
+                        <option value="VIP">VIP (Rp 9.400/jam)</option>
+                    </select>
+                </div>
+
+                <!-- Input Manual (LAINNYA) -->
+                <div class="mb-3" id="otherTypeDiv" style="display: none;">
+                    <label class="form-label fw-bold">Masukkan Jenis Hewan (Reptil dll):</label>
+                    <input type="text" name="otherType" id="otherTypeInput" class="form-control" placeholder="Contoh: Iguana, Kura-kura">
+                    <small class="text-muted">Biaya flat Rp 1.100/jam</small>
+                </div>
+
+                <!-- 3. JUMLAH -->
+                <div class="mb-3">
+                    <label class="form-label fw-bold">Jumlah (Ekor)</label>
+                    <input type="number" class="form-control" th:field="*{quantity}" min="1" required>
+                </div>
+
+                <!-- 4. DESKRIPSI -->
+                <div class="mb-3">
+                    <label class="form-label fw-bold">Deskripsi</label>
+                    <textarea class="form-control" th:field="*{description}" placeholder="Ciri-ciri, kondisi..." required></textarea>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label fw-bold">Nama Pemilik</label>
+                    <input type="text" class="form-control" th:field="*{ownerName}" required>
+                </div>
+
+                <!-- 5. NO HP -->
+                <div class="mb-3">
+                    <label class="form-label fw-bold">Nomor HP Pemilik</label>
+                    <input type="text" class="form-control" th:field="*{ownerPhone}" 
+                           required minlength="9" maxlength="15" 
+                           pattern="[0-9]+" inputmode="numeric"
+                           oninput="this.value = this.value.replace(/[^0-9]/g, '')"
+                           title="Hanya angka diperbolehkan (0-9)">
+                    <div class="form-text">Hanya angka (0-9), minimal 9 digit.</div>
+                </div>
+
+                <button type="submit" class="btn btn-primary w-100">Simpan Data</button>
+                <a href="/" class="btn btn-link w-100 text-center mt-2">Batal</a>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    function handleTypeChange() {
+        const type = document.getElementById('typeSelect').value;
+        const anjingDiv = document.getElementById('anjingCategoryDiv');
+        const kucingDiv = document.getElementById('kucingCategoryDiv');
+        const otherDiv = document.getElementById('otherTypeDiv');
+        const anjingInput = document.getElementById('anjingCat');
+        const kucingInput = document.getElementById('kucingCat');
+        const otherInput = document.getElementById('otherTypeInput');
+
+        anjingDiv.style.display = 'none';
+        kucingDiv.style.display = 'none';
+        otherDiv.style.display = 'none';
+
+        anjingInput.removeAttribute('required');
+        kucingInput.removeAttribute('required');
+        otherInput.removeAttribute('required');
+
+        if (type === 'Anjing') {
+            anjingDiv.style.display = 'block';
+            anjingInput.setAttribute('required', 'required');
+            anjingInput.name = "petCategory";
+            kucingInput.name = "ignoreCategory";
+
+        } else if (type === 'Kucing') {
+            kucingDiv.style.display = 'block';
+            kucingInput.setAttribute('required', 'required');
+            kucingInput.name = "petCategory";
+            anjingInput.name = "ignoreCategory";
+
+        } else if (type === 'Lainnya') {
+            otherDiv.style.display = 'block';
+            otherInput.setAttribute('required', 'required');
+            anjingInput.name = "ignoreCategory";
+            kucingInput.name = "ignoreCategory";
+        } else {
+            anjingInput.name = "ignoreCategory";
+            kucingInput.name = "ignoreCategory";
+        }
+    }
+</script>
+
+</body>
+</html>

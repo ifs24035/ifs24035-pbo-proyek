@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html
+  xmlns:th="http://www.thymeleaf.org"
+  xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+  layout:decorate="~{layouts/base}"
+>
+  <head>
+    <title>Daftar - Nuel's Pawtopia</title>
+    
+    <!-- === TAMBAHKAN BARIS INI (FAVICON) === -->
+    <link rel="icon" type="image/png" href="/assets/images/hewan-new.png">
+    
+    <!-- 1. LOAD FONT AWESOME & FONTS -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600&family=Poppins:wght@300;400;500&display=swap" rel="stylesheet">
+
+    <!-- 2. CSS DIPERBAIKI (SAMA DENGAN LOGIN) -->
+    <style>
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: linear-gradient(135deg, #f4efff 0%, #e8dcff 100%);
+            min-height: 100vh;
+        }
+
+        .auth-card {
+            border: none;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(74, 59, 115, 0.1);
+            background: #ffffff;
+            position: relative;
+            z-index: 2;
+            overflow: hidden;
+        }
+
+        .brand-title {
+            font-family: 'Fredoka', sans-serif;
+            color: #4a3b73;
+            font-size: 1.8rem;
+            letter-spacing: 0.5px;
+        }
+
+        /* Styling Input Group Wrapper (Kunci agar rapi) */
+        .input-group {
+            border: 1px solid #e8dcff;
+            border-radius: 12px;
+            overflow: hidden;
+            background-color: #fcfaff;
+            transition: all 0.3s ease;
+        }
+
+        .input-group:focus-within {
+            border-color: #7b5edb;
+            box-shadow: 0 0 0 4px rgba(123, 94, 219, 0.1);
+            background-color: #fff;
+        }
+
+        /* Ikon di sebelah kiri */
+        .input-group-text {
+            background-color: transparent;
+            border: none;
+            color: #7b5edb;
+            padding-left: 15px;
+            padding-right: 10px;
+        }
+
+        /* Kotak Input */
+        .form-control {
+            border: none;
+            background-color: transparent;
+            padding: 12px 5px;
+            font-size: 0.95rem;
+            color: #4a3b73;
+        }
+
+        .form-control:focus {
+            box-shadow: none;
+            background-color: transparent;
+        }
+
+        .btn-primary {
+            background-color: #7b5edb;
+            border: none;
+            border-radius: 12px;
+            padding: 12px;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+            transition: all 0.3s ease;
+        }
+
+        .btn-primary:hover {
+            background-color: #6a4ec9;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(123, 94, 219, 0.3);
+        }
+
+        a { color: #7b5edb; text-decoration: none; font-weight: 600; }
+        a:hover { color: #6a4ec9; text-decoration: underline; }
+
+        /* Dekorasi Background Paw */
+        .bg-decoration-paw {
+            position: fixed;
+            color: #d7c6ff;
+            opacity: 0.2;
+            z-index: 1;
+            pointer-events: none;
+        }
+        
+        .paw-1 { top: -50px; left: -50px; font-size: 300px; transform: rotate(45deg); }
+        .paw-2 { bottom: -30px; right: -30px; font-size: 200px; transform: rotate(-25deg); }
+    </style>
+  </head>
+  <body>
+    
+    <div layout:fragment="content" class="d-flex align-items-center justify-content-center position-relative" style="min-height: 80vh;">
+      
+      <!-- Dekorasi Background -->
+      <i class="fas fa-paw bg-decoration-paw paw-1"></i>
+      <i class="fas fa-paw bg-decoration-paw paw-2"></i>
+
+      <form
+        th:action="@{/auth/register/post}"
+        method="post"
+        th:object="${registerForm}"
+        class="w-100 position-relative"
+        style="z-index: 2;"
+      >
+        <div class="card auth-card mx-auto p-4" style="max-width: 420px">
+          <div class="card-body">
+            
+            <!-- Header Logo -->
+            <div class="text-center mb-4">
+                <div class="d-inline-block p-3 rounded-circle bg-light mb-3 shadow-sm">
+                    <i class="fas fa-user-plus fa-2x" style="color: #7b5edb;"></i>
+                </div>
+                <h5 class="brand-title">Buat Akun Baru</h5>
+                <span class="text-muted small">
+                  Bergabunglah dengan Nuel's Pawtopia
+                </span>
+            </div>
+
+            <!-- Pesan Error Global -->
+            <div th:if="${#fields.hasGlobalErrors()}" class="alert alert-danger shadow-sm border-0 small rounded-3 mb-4">
+                <i class="fas fa-exclamation-circle me-1"></i> 
+                <th:block th:each="err : ${#fields.globalErrors()}" th:text="${err}"></th:block>
+            </div>
+
+            <!-- 1. Input Nama Lengkap -->
+            <div class="form-group mb-3">
+                <label for="inputName" class="small fw-bold text-secondary mb-2 ms-1">Nama Lengkap</label>
+                <div class="input-group d-flex align-items-center">
+                    <span class="input-group-text">
+                        <i class="fas fa-user"></i>
+                    </span>
+                    <input
+                      type="text"
+                      class="form-control"
+                      id="inputName"
+                      th:field="*{name}"
+                      th:classappend="${#fields.hasErrors('name')} ? 'is-invalid'"
+                      placeholder="Nama Anda"
+                    />
+                </div>
+                <div th:if="${#fields.hasErrors('name')}" class="text-danger small mt-1 ms-1">
+                  <th:block th:each="err : ${#fields.errors('name')}" th:text="${err}"></th:block>
+                </div>
+            </div>
+
+            <!-- 2. Input Email -->
+            <div class="form-group mb-3">
+                <label for="inputEmail" class="small fw-bold text-secondary mb-2 ms-1">Email</label>
+                <div class="input-group d-flex align-items-center">
+                    <span class="input-group-text">
+                        <i class="fas fa-envelope"></i>
+                    </span>
+                    <input
+                      type="email"
+                      class="form-control"
+                      id="inputEmail"
+                      th:field="*{email}"
+                      th:classappend="${#fields.hasErrors('email')} ? 'is-invalid'"
+                      placeholder="nama@email.com"
+                    />
+                </div>
+                <div th:if="${#fields.hasErrors('email')}" class="text-danger small mt-1 ms-1">
+                  <th:block th:each="err : ${#fields.errors('email')}" th:text="${err}"></th:block>
+                </div>
+            </div>
+
+            <!-- 3. Input Password -->
+            <div class="form-group mb-4">
+                <label for="inputPassword" class="small fw-bold text-secondary mb-2 ms-1">Kata Sandi</label>
+                <div class="input-group d-flex align-items-center">
+                    <span class="input-group-text">
+                        <i class="fas fa-lock"></i>
+                    </span>
+                    <input
+                      type="password"
+                      class="form-control"
+                      id="inputPassword"
+                      th:field="*{password}"
+                      th:classappend="${#fields.hasErrors('password')} ? 'is-invalid'"
+                      placeholder="Buat kata sandi"
+                    />
+                </div>
+                <div th:if="${#fields.hasErrors('password')}" class="text-danger small mt-1 ms-1">
+                  <th:block th:each="err : ${#fields.errors('password')}" th:text="${err}"></th:block>
+                </div>
+            </div>
+
+            <!-- Tombol Daftar -->
+            <div class="d-grid gap-2 mb-4">
+              <button type="submit" class="btn btn-primary shadow-sm">
+                Daftar Sekarang
+              </button>
+            </div>
+
+            <!-- Footer -->
+            <div class="text-center pt-3 border-top">
+              <p class="small text-muted mb-0">
+                Sudah memiliki akun?
+                <a th:href="@{/auth/login}" class="fw-bold">Masuk di sini</a>
+              </p>
+            </div>
+
+          </div>
+        </div>
+      </form>
+    </div>
+  </body>
+</html>

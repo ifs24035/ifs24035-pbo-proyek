@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Detail Hewan</title>
+    <link rel="icon" type="image/png" href="/assets/images/hewan-new.png">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+</style>
+</head>
+<body class="bg-light">
+<div class="container mt-4">
+    <a href="/" class="btn text-white mb-3" style="background-color:#6A4C9C;">&larr; Kembali</a>
+    
+    <div th:if="${error}" class="alert alert-danger" th:text="${error}"></div>
+    <div th:if="${success}" class="alert alert-success" th:text="${success}"></div>
+
+    <div class="row">
+        <!-- Kolom Kiri: Foto & Hapus -->
+        <div class="col-md-4">
+            <div class="card mb-3 shadow-sm" style="background-color:#F5F1FB;">
+                <div class="card-body text-center bg-light">
+                    
+                    <!-- 1. Jika Ada Foto -->
+                    <img th:if="${pet.imagePath}" 
+                         th:src="@{'/uploads/' + ${pet.imagePath}}" 
+                         class="img-fluid rounded shadow-sm mb-3" 
+                         style="max-height: 250px; width: 100%; object-fit: cover;">
+                    
+                    <!-- 2. Jika TIDAK Ada Foto (Template Default) -->
+                    <div th:unless="${pet.imagePath}" 
+                         class="rounded shadow-sm mb-3 d-flex align-items-center justify-content-center bg-white text-secondary mx-auto border" 
+                         style="height: 200px; width: 100%; max-width: 250px;">
+                        <div class="text-center">
+                            <i class="fas fa-camera fa-3x mb-2 text-muted"></i>
+                            <p class="small m-0">Belum ada foto</p>
+                        </div>
+                    </div>
+                    
+                    <!-- Form Ubah Gambar -->
+                    <form th:action="@{/pets/{id}/image(id=${pet.id})}" method="post" enctype="multipart/form-data">
+                        <label class="form-label small fw-bold text-start w-100">Ganti Foto:</label>
+                        <div class="input-group input-group-sm">
+                            <input type="file" name="image" class="form-control" accept="image/*" required>
+                            <button type="submit" class="btn text-white" style="background-color:#6A4C9C;">Upload</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Form Update Status: SUDAH DIAMBIL -->
+            <!-- Form Status Pengambilan -->
+            
+            <!-- CASE 1: Belum diambil (Tampilkan tombol hijau "Ambil") -->
+            <div class="card border-success mb-3" th:unless="${pet.isTaken}">
+                <div class="card-header bg-success text-white">Status Pengambilan</div>
+                <div class="card-body">
+                    <p class="small text-muted">Klik tombol di bawah jika hewan sudah dikembalikan ke pemilik.</p>
+                    <form th:action="@{/pets/{id}/take(id=${pet.id})}" method="post">
+                        <button type="submit" class="btn btn-success w-100 fw-bold">
+                            <i class="fas fa-check"></i> Tandai Sudah Diambil
+                        </button>
+                    </form>
+                </div>
+            </div>
+            
+            <!-- CASE 2: Sudah diambil (Tampilkan Info + Tombol Revert Merah) -->
+            <div class="card border-warning mb-3" th:if="${pet.isTaken}">
+                 <div class="card-header bg-light fw-bold text-success">
+                     <i class="fas fa-check-circle"></i> Hewan Sudah Diambil
+                 </div>
+                 <div class="card-body">
+                     <p class="small text-muted">Apakah Anda salah klik? Tekan tombol merah di bawah untuk menandai hewan ini sebagai <strong>Belum Diambil</strong> lagi.</p>
+                     
+                     <!-- Tombol "Tandai Belum Diambil" (Merah) -->
+                     <form th:action="@{/pets/{id}/untake(id=${pet.id})}" method="post">
+                        <button type="submit" class="btn btn-outline-danger w-100 btn-sm">
+                            <i class="fas fa-times"></i> Tandai Belum Diambil
+                        </button>
+                    </form>
+                 </div>
+            </div>
+
+            <!-- Form Hapus dengan Verifikasi -->
+            <div class="card border-danger">
+                <div class="card-header bg-danger text-white">Hapus Data</div>
+                <div class="card-body">
+                    <p class="small text-muted">Masukkan No HP Pemilik untuk konfirmasi penghapusan.</p>
+                    <form th:action="@{/pets/{id}/delete(id=${pet.id})}" method="post">
+                        <input type="text" name="verificationPhone" class="form-control mb-2" placeholder="0812..." required>
+                        <button type="submit" class="btn btn-danger w-100" onclick="return confirm('Yakin ingin menghapus?')">Hapus Permanen</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Kolom Kanan: Info Biaya & Edit Form -->
+        <div class="col-md-8">
+            
+            <!-- 1. TABEL RINCIAN BIAYA (READ ONLY) -->
+            <div class="card mb-4 shadow-sm">
+                <!-- Header Biru (HANYA SATU SEKARANG) -->
+                <div class="card-header text-white fw-bold" style="background-color:#6A4C9C;">
+                    <i class="fas fa-receipt me-2"></i> Rincian Biaya & Informasi
+                </div>
+                
+                <div class="card-body p-0">
+                    <table class="table table-striped mb-0" style="border-color:#E0D7F6;">
+                        <tbody>
+                            <!-- Kode Kandang tetap ada di dalam tabel agar info tidak hilang -->
+                            <tr>
+                                <th style="width: 40%;">Kode Kandang</th>
+                                <td>
+                                    <span class="badge bg-dark fs-6" th:text="${pet.petCode}">ANJ-K-001</span>
+                                </td>
+                            </tr>
+                            <tr>
+                                <th>Jenis Hewan</th>
+                                <td>
+                                    <span class="fw-bold" th:text="${pet.petType}">Anjing</span>
+                                </td>
+                            </tr>
+                            <!-- Tampilkan Kriteria HANYA jika ada -->
+                            <tr th:if="${pet.petCategory}">
+                                <th>Kriteria</th>
+                                <td>
+                                    <span class="badge bg-info text-dark" th:text="${pet.petCategory}">Besar</span>
+                                </td>
+                            </tr>
+                            <tr>
+                                <th>Jumlah Hewan</th>
+                                <td th:text="${pet.quantity + ' Ekor'}">3 Ekor</td>
+                            </tr>
+                            <tr>
+                                <th>Tarif per Jam (Total)</th>
+                                <td>
+                                    <span class="fw-bold text-primary" th:text="'Rp ' + ${pet.getTotalHourlyRate()}">Rp 23.100</span>
+                                    <br>
+                                    <small class="text-muted">
+                                        (<span th:text="${pet.quantity}">3</span> ekor x Rp <span th:text="${pet.getBaseHourlyRate()}">7.700</span>)
+                                    </small>
+                                </td>
+                            </tr>
+                            <tr>
+                                <th>Lama Penitipan</th>
+                                <td>
+                                    <span class="fw-bold" th:text="${pet.getBillableHours() + ' Jam'}">2 Jam</span>
+                                    <br>
+                                    <small class="text-muted" th:text="'(Aktual: ' + ${pet.getDurationText()} + ')'">1 Jam 30 Menit</small>
+                                </td>
+                            </tr>
+                            <tr class="table-warning">
+                                <th class="align-middle">Total Biaya Saat Ini</th>
+                                <td class="align-middle">
+                                    <h4 class="mb-0 fw-bold text-success" th:text="'Rp ' + ${pet.getEstimatedCost()}">Rp 46.200</h4>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- 2. FORM EDIT DATA (SAMA SEPERTI SEBELUMNYA) -->
+            <div class="card">
+                <div class="card-header fw-bold text-dark" style="background-color:#EDE7F6;">Edit Data Pemilik & Deskripsi</div>
+                <div class="card-body">
+                    <form th:action="@{/pets/{id}/update(id=${pet.id})}" th:object="${pet}" method="post">
+                        
+                        <!-- Input Hidden untuk menjaga logika kategori saat update -->
+                         <!-- Tips: Biasanya di edit kita kunci jenis hewan agar harga tidak berantakan, 
+                              tapi jika ingin tetap bisa diedit, gunakan form seperti sebelumnya. 
+                              Di sini saya sertakan form lengkap. -->
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="fw-bold">Jenis Hewan</label>
+                                <select class="form-select" id="editTypeSelect" name="petType" onchange="toggleEditOther()">
+                                    <option value="Kucing" th:selected="${pet.petType == 'Kucing'}">Kucing</option>
+                                    <option value="Anjing" th:selected="${pet.petType == 'Anjing'}">Anjing</option>
+                                    <option value="Burung" th:selected="${pet.petType == 'Burung'}">Burung</option>
+                                    <option value="Kelinci" th:selected="${pet.petType == 'Kelinci'}">Kelinci</option>
+                                    <option value="Hamster" th:selected="${pet.petType == 'Hamster'}">Hamster</option>
+                                    <option value="Lainnya" th:selected="${pet.petType != 'Kucing' and pet.petType != 'Anjing' and pet.petType != 'Burung' and pet.petType != 'Kelinci' and pet.petType != 'Hamster'}">Lainnya...</option>
+                                </select>
+                                
+                                <div id="editOtherDiv" class="mt-2" th:style="${pet.petType != 'Kucing' and pet.petType != 'Anjing' and pet.petType != 'Burung'} ? 'display:block' : 'display:none'">
+                                    <input type="text" name="otherType" id="editOtherInput" class="form-control form-control-sm" th:value="${pet.petType}" placeholder="Jenis...">
+                                </div>
+                            </div>
+
+                            <div class="col-md-6 mb-3">
+                                <label class="fw-bold">Jumlah</label>
+                                <input type="number" class="form-control" th:field="*{quantity}" min="1" required>
+                            </div>
+                        </div>
+                        
+                        <!-- Form Kategori (Muncul jika Anjing/Kucing) -->
+                        <div class="mb-3" th:if="${pet.petType == 'Anjing' or pet.petType == 'Kucing'}">
+                            <label class="fw-bold">Kriteria (Saat ini: <span th:text="${pet.petCategory}"></span>)</label>
+                            <select class="form-select" name="petCategory">
+                                <!-- Opsi Anjing -->
+                                <optgroup label="Anjing" th:if="${pet.petType == 'Anjing'}">
+                                    <option value="Kecil" th:selected="${pet.petCategory == 'Kecil'}">Kecil</option>
+                                    <option value="Sedang" th:selected="${pet.petCategory == 'Sedang'}">Sedang</option>
+                                    <option value="Besar" th:selected="${pet.petCategory == 'Besar'}">Besar</option>
+                                </optgroup>
+                                <!-- Opsi Kucing -->
+                                <optgroup label="Kucing" th:if="${pet.petType == 'Kucing'}">
+                                    <option value="Standar" th:selected="${pet.petCategory == 'Standar'}">Standar</option>
+                                    <option value="Premium" th:selected="${pet.petCategory == 'Premium'}">Premium</option>
+                                    <option value="VIP" th:selected="${pet.petCategory == 'VIP'}">VIP</option>
+                                </optgroup>
+                            </select>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="fw-bold">Deskripsi</label>
+                            <textarea class="form-control" th:field="*{description}" required></textarea>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="fw-bold">Nama Pemilik</label>
+                                <input type="text" class="form-control" th:field="*{ownerName}" required>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="fw-bold">No HP Pemilik</label>
+                                <input type="text" class="form-control" th:field="*{ownerPhone}" required minlength="9" pattern="[0-9]+">
+                            </div>
+                        </div>
+
+                        <hr>
+
+                        <!-- TAMPILAN WAKTU DIBUAT & DIUPDATE -->
+                        <div class="bg-light p-3 rounded border mb-3">
+                            <div class="row small text-secondary">
+                                <!-- Kolom Kiri: Waktu Masuk -->
+                                <div class="col-6 border-end">
+                                    <label class="fw-bold text-primary">
+                                        <i class="fas fa-calendar-plus me-1"></i> Dititipkan Pada
+                                    </label>
+                                    <div class="mt-1" th:text="${#temporals.format(pet.createdAt, 'dd MMMM yyyy, HH:mm') + ' WIB'}">
+                                        10 Desember 2025, 08:00 WIB
+                                    </div>
+                                </div>
+
+                                <!-- Kolom Kanan: Waktu Update -->
+                                <div class="col-6 text-end">
+                                    <label class="fw-bold text-success">
+                                        <i class="fas fa-history me-1"></i> Terakhir Diupdate
+                                    </label>
+                                    <!-- Logika: Jika created sama dengan updated, berarti belum pernah diedit -->
+                                    <div class="mt-1" th:if="${pet.createdAt.equals(pet.updatedAt)}">
+                                        - Belum ada perubahan -
+                                    </div>
+                                    <div class="mt-1" th:unless="${pet.createdAt.equals(pet.updatedAt)}" 
+                                         th:text="${#temporals.format(pet.updatedAt, 'dd MMMM yyyy, HH:mm') + ' WIB'}">
+                                        10 Desember 2025, 10:00 WIB
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Tombol Simpan -->
+                        <button type="submit" class="btn text-white w-100" style="background-color:#6A4C9C;">Simpan Perubahan</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+<!-- Tambahkan Script ini di paling bawah body detail.html -->
+<script>
+    function toggleEditOther() {
+        const select = document.getElementById('editTypeSelect');
+        const otherDiv = document.getElementById('editOtherDiv');
+        const otherInput = document.getElementById('editOtherInput');
+
+        if (select.value === 'Lainnya') {
+            otherDiv.style.display = 'block';
+            otherInput.setAttribute('required', 'required');
+        } else {
+            otherDiv.style.display = 'none';
+            otherInput.removeAttribute('required');
+        }
+    }
+</script>
+</body>
+</html>

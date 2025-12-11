@@ -1,0 +1,88 @@
+<div th:fragment="editTodoModal">
+  <form th:action="@{/todos/edit}" method="post" th:object="${todoForm}">
+    <div class="modal fade" id="editTodoModal" tabindex="-1">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">Ubah Todo</h5>
+            <button
+              type="button"
+              class="btn-close"
+              data-bs-dismiss="modal"
+            ></button>
+          </div>
+
+          <div class="modal-body">
+            <!-- Hidden: ID Todo -->
+            <input id="editTodoId" type="hidden" th:field="*{id}" />
+
+            <!-- Judul -->
+            <div class="mb-3">
+              <label for="editTodoTitle" class="form-label">Judul</label>
+              <input
+                id="editTodoTitle"
+                type="text"
+                class="form-control"
+                th:field="*{title}"
+              />
+              <small
+                class="text-danger"
+                th:if="${#fields.hasErrors('title')}"
+                th:errors="*{title}"
+              ></small>
+            </div>
+
+            <!-- Status selesai -->
+            <div class="mb-3">
+              <label for="editTodoFinished" class="form-label"
+                >Sudah Selesai?</label
+              >
+              <select
+                id="editTodoFinished"
+                class="form-select"
+                th:field="*{isFinished}"
+              >
+                <option value="1">Ya</option>
+                <option value="0">Tidak</option>
+              </select>
+              <small
+                class="text-danger"
+                th:if="${#fields.hasErrors('isFinished')}"
+                th:errors="*{isFinished}"
+              ></small>
+            </div>
+
+            <!-- Deskripsi -->
+            <div class="mb-3">
+              <label for="editTodoDescription" class="form-label"
+                >Deskripsi</label
+              >
+              <textarea
+                class="form-control"
+                rows="4"
+                th:field="*{description}"
+                id="editTodoDescription"
+              ></textarea>
+              <small
+                class="text-danger"
+                th:if="${#fields.hasErrors('description')}"
+                th:errors="*{description}"
+              ></small>
+            </div>
+          </div>
+
+          <div class="modal-footer">
+            <button
+              type="button"
+              class="btn btn-secondary"
+              data-bs-dismiss="modal"
+            >
+              Batal
+            </button>
+            <button type="submit" class="btn btn-primary">Simpan</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </form>
+</div>

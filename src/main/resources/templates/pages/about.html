@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Tentang Kami - Nuel’s Pawtopia</title>
+    <link rel="icon" type="image/png" href="/assets/images/hewan-new.png">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        .hero-section {
+            background: linear-gradient(135deg, #4e73df 0%, #224abe 100%);
+            color: white;
+            border-radius: 0 0 50px 50px;
+            padding: 3rem 1rem;
+            margin-bottom: 2rem;
+        }
+        .price-card {
+            transition: transform 0.3s;
+            border: none;
+            border-radius: 15px;
+        }
+        .price-card:hover {
+            transform: translateY(-10px); /* Efek melayang saat di-hover */
+        }
+        .feature-icon {
+            width: 50px;
+            height: 50px;
+            background-color: #eef2ff;
+            color: #4e73df;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 15px;
+        }
+    </style>
+</head>
+<body class="bg-light">
+
+    <!-- Navbar Sederhana -->
+    <nav class="navbar navbar-light bg-white shadow-sm sticky-top">
+        <div class="container">
+            <span class="navbar-brand fw-bold text-primary">
+                <i class="fas fa-paw me-2"></i>Nuel’s Pawtopia
+            </span>
+            <a href="/" class="btn btn-outline-primary btn-sm">
+                <i class="fas fa-arrow-left me-2"></i>Kembali ke Dashboard
+            </a>
+        </div>
+    </nav>
+
+    <!-- Header / Hero Section -->
+    <div class="hero-section text-center shadow">
+        <div class="container">
+            <h1 class="fw-bold mb-3">🐾 Tentang Nuel’s Pawtopia</h1>
+            <p class="lead mb-0" style="max-width: 700px; margin: 0 auto; opacity: 0.9;">
+                Sistem Pengelolaan Penitipan Hewan Modern, Aman, dan Terpercaya.
+            </p>
+        </div>
+    </div>
+
+    <div class="container mb-5">
+        
+        <!-- Section 1: Deskripsi Sistem -->
+        <div class="card shadow-sm border-0 mb-5">
+            <div class="card-body p-4 p-md-5">
+                <div class="row align-items-center">
+                    <div class="col-md-8">
+                        <h3 class="fw-bold text-dark mb-3">Sistem Pengelolaan Penitipan Hewan</h3>
+                        <p class="text-secondary text-justify">
+                            Sistem Pengelolaan Penitipan Hewan di <strong>Nuel’s Pawtopia</strong> dirancang untuk membantu admin dalam mengatur seluruh proses operasional jasa penitipan hewan. Sistem ini memungkinkan admin untuk mengelola data hewan titipan, perhitungan biaya, durasi penitipan, serta kategori layanan sesuai jenis hewannya.
+                        </p>
+                        <p class="text-secondary">
+                            Melalui sistem ini, admin dapat memastikan setiap hewan mendapatkan layanan yang sesuai standar serta mempermudah pencatatan transaksi dan manajemen layanan secara akurat dan efisien.
+                        </p>
+                    </div>
+                    <div class="col-md-4 text-center">
+                        <i class="fas fa-cat fa-8x text-primary opacity-25"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Section 2: Tarif Harga (Cards) -->
+        <div class="mb-5">
+            <h3 class="text-center fw-bold mb-4">🐶 Kategori Hewan & Tarif Per Jam</h3>
+            <p class="text-center text-muted mb-4">Tarif berikut digunakan sistem untuk menghitung biaya otomatis.</p>
+            
+            <div class="row g-4">
+                <!-- Card Anjing -->
+                <div class="col-md-4">
+                    <div class="card price-card shadow h-100">
+                        <div class="card-header bg-primary text-white text-center py-3" style="border-radius: 15px 15px 0 0;">
+                            <h5 class="mb-0 fw-bold"><i class="fas fa-dog me-2"></i>Anjing</h5>
+                        </div>
+                        <div class="card-body">
+                            <ul class="list-group list-group-flush">
+                                <li class="list-group-item d-flex justify-content-between align-items-center">
+                                    Anjing Kecil <span class="badge bg-primary rounded-pill">Rp 2.700/Jam</span>
+                                </li>
+                                <li class="list-group-item d-flex justify-content-between align-items-center">
+                                    Anjing Sedang <span class="badge bg-primary rounded-pill">Rp 4.200/Jam</span>
+                                </li>
+                                <li class="list-group-item d-flex justify-content-between align-items-center">
+                                    Anjing Besar <span class="badge bg-primary rounded-pill">Rp 7.700/Jam</span>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Card Kucing -->
+                <div class="col-md-4">
+                    <div class="card price-card shadow h-100">
+                        <div class="card-header bg-warning text-dark text-center py-3" style="border-radius: 15px 15px 0 0;">
+                            <h5 class="mb-0 fw-bold"><i class="fas fa-cat me-2"></i>Kucing</h5>
+                        </div>
+                        <div class="card-body">
+                            <ul class="list-group list-group-flush">
+                                <li class="list-group-item d-flex justify-content-between align-items-center">
+                                    Standar <span class="badge bg-warning text-dark rounded-pill">Rp 1.700/Jam</span>
+                                </li>
+                                <li class="list-group-item d-flex justify-content-between align-items-center">
+                                    Premium <span class="badge bg-warning text-dark rounded-pill">Rp 3.800/Jam</span>
+                                </li>
+                                <li class="list-group-item d-flex justify-content-between align-items-center">
+                                    VIP <span class="badge bg-warning text-dark rounded-pill">Rp 9.400/Jam</span>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Card Hewan Lain -->
+                <div class="col-md-4">
+                    <div class="card price-card shadow h-100">
+                        <div class="card-header bg-success text-white text-center py-3" style="border-radius: 15px 15px 0 0;">
+                            <h5 class="mb-0 fw-bold"><i class="fas fa-dove me-2"></i>Hewan Lainnya</h5>
+                        </div>
+                        <div class="card-body">
+                            <ul class="list-group list-group-flush">
+                                <li class="list-group-item d-flex justify-content-between align-items-center">
+                                    Burung <span class="badge bg-success rounded-pill">Rp 700/Jam</span>
+                                </li>
+                                <li class="list-group-item d-flex justify-content-between align-items-center">
+                                    Kelinci <span class="badge bg-success rounded-pill">Rp 1.000/Jam</span>
+                                </li>
+                                <li class="list-group-item d-flex justify-content-between align-items-center">
+                                    Hamster/Marmut <span class="badge bg-success rounded-pill">Rp 400/Jam</span>
+                                </li>
+                                <li class="list-group-item d-flex justify-content-between align-items-center">
+                                    Reptil Kecil <span class="badge bg-success rounded-pill">Rp 1.100/Jam</span>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Section 3: Fitur Utama -->
+        <div class="card bg-white border-0 shadow-sm rounded-4">
+            <div class="card-body p-5">
+                <h3 class="fw-bold mb-4 text-center">❤️ Fitur Utama Sistem</h3>
+                <div class="row g-4">
+                    <div class="col-md-6">
+                        <div class="d-flex align-items-start">
+                            <div class="feature-icon"><i class="fas fa-database"></i></div>
+                            <div>
+                                <h5 class="fw-bold">Manajemen Data Hewan</h5>
+                                <p class="small text-muted mb-0">Admin dapat mencatat nama hewan, jenis, pemilik, dan kategori perawatan dengan detail.</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="d-flex align-items-start">
+                            <div class="feature-icon"><i class="fas fa-calculator"></i></div>
+                            <div>
+                                <h5 class="fw-bold">Perhitungan Biaya Otomatis</h5>
+                                <p class="small text-muted mb-0">Sistem menghitung total biaya secara real-time berdasarkan tarif per jam dan kategori.</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="d-flex align-items-start">
+                            <div class="feature-icon"><i class="fas fa-clock"></i></div>
+                            <div>
+                                <h5 class="fw-bold">Pencatatan Waktu Akurat</h5>
+                                <p class="small text-muted mb-0">Durasi penitipan dihitung otomatis (Masuk & Keluar) memudahkan administrasi.</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="d-flex align-items-start">
+                            <div class="feature-icon"><i class="fas fa-clipboard-list"></i></div>
+                            <div>
+                                <h5 class="fw-bold">Laporan & Riwayat</h5>
+                                <p class="small text-muted mb-0">Admin dapat memantau riwayat penitipan dan detail transaksi sebelumnya.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="text-center mt-5 text-muted small">
+            &copy; 2025 Nuel’s Pawtopia System. All Rights Reserved.
+        </div>
+    </div>
+
+</body>
+</html>
