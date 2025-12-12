@@ -15,7 +15,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
-import org.springframework.test.util.ReflectionTestUtils; // <--- PENTING
+import org.springframework.test.util.ReflectionTestUtils;
 
 import java.util.Map;
 import java.util.UUID;
@@ -53,24 +53,54 @@ class UserControllerTests {
         mockUser.setEmail("test@example.com");
         mockUser.setPassword(encoder.encode(rawPassword));
 
-        // --- PERBAIKAN UTAMA: Inject AuthContext secara manual ---
         ReflectionTestUtils.setField(userController, "authContext", authContext);
     }
 
-    // --- 1. Register ---
+    // --- 1. Register Validation Tests (Coverage for Name, Email, Password null/empty) ---
+    
     @Test
-    void testRegisterUser_InvalidInput() {
-        User req = new User();
-        ResponseEntity<ApiResponse<Map<String, UUID>>> res = userController.registerUser(req);
-        assertEquals(HttpStatus.BAD_REQUEST, res.getStatusCode());
+    void testRegisterUser_Validation_Name() {
+        // Case 1: Name Null
+        User reqNull = new User(null, "a@b.c", "pass");
+        ResponseEntity<ApiResponse<Map<String, UUID>>> resNull = userController.registerUser(reqNull);
+        assertEquals(HttpStatus.BAD_REQUEST, resNull.getStatusCode());
+        assertTrue(resNull.getBody().getMessage().contains("Data nama tidak valid"));
 
-        req.setName("Name");
-        res = userController.registerUser(req);
-        assertEquals(HttpStatus.BAD_REQUEST, res.getStatusCode());
+        // Case 2: Name Empty ""
+        User reqEmpty = new User("", "a@b.c", "pass");
+        ResponseEntity<ApiResponse<Map<String, UUID>>> resEmpty = userController.registerUser(reqEmpty);
+        assertEquals(HttpStatus.BAD_REQUEST, resEmpty.getStatusCode());
+        assertTrue(resEmpty.getBody().getMessage().contains("Data nama tidak valid"));
+    }
 
-        req.setEmail("a@b.c");
-        res = userController.registerUser(req);
-        assertEquals(HttpStatus.BAD_REQUEST, res.getStatusCode());
+    @Test
+    void testRegisterUser_Validation_Email() {
+        // Case 1: Email Null
+        User reqNull = new User("Name", null, "pass");
+        ResponseEntity<ApiResponse<Map<String, UUID>>> resNull = userController.registerUser(reqNull);
+        assertEquals(HttpStatus.BAD_REQUEST, resNull.getStatusCode());
+        assertTrue(resNull.getBody().getMessage().contains("Data email tidak valid"));
+
+        // Case 2: Email Empty ""
+        User reqEmpty = new User("Name", "", "pass");
+        ResponseEntity<ApiResponse<Map<String, UUID>>> resEmpty = userController.registerUser(reqEmpty);
+        assertEquals(HttpStatus.BAD_REQUEST, resEmpty.getStatusCode());
+        assertTrue(resEmpty.getBody().getMessage().contains("Data email tidak valid"));
+    }
+
+    @Test
+    void testRegisterUser_Validation_Password() {
+        // Case 1: Password Null
+        User reqNull = new User("Name", "a@b.c", null);
+        ResponseEntity<ApiResponse<Map<String, UUID>>> resNull = userController.registerUser(reqNull);
+        assertEquals(HttpStatus.BAD_REQUEST, resNull.getStatusCode());
+        assertTrue(resNull.getBody().getMessage().contains("Data password tidak valid"));
+
+        // Case 2: Password Empty ""
+        User reqEmpty = new User("Name", "a@b.c", "");
+        ResponseEntity<ApiResponse<Map<String, UUID>>> resEmpty = userController.registerUser(reqEmpty);
+        assertEquals(HttpStatus.BAD_REQUEST, resEmpty.getStatusCode());
+        assertTrue(resEmpty.getBody().getMessage().contains("Data password tidak valid"));
     }
 
     @Test
@@ -94,16 +124,35 @@ class UserControllerTests {
         assertEquals(mockUser.getId(), res.getBody().getData().get("id"));
     }
 
-    // --- 2. Login ---
-    @Test
-    void testLoginUser_InvalidInput() {
-        User req = new User();
-        ResponseEntity<ApiResponse<Map<String, String>>> res = userController.loginUser(req);
-        assertEquals(HttpStatus.BAD_REQUEST, res.getStatusCode());
+    // --- 2. Login Validation Tests (Coverage for Email, Password null/empty) ---
 
-        req.setEmail("a@b.c");
-        res = userController.loginUser(req);
-        assertEquals(HttpStatus.BAD_REQUEST, res.getStatusCode());
+    @Test
+    void testLoginUser_Validation_Email() {
+        // Null
+        User reqNull = new User(); // email null
+        reqNull.setPassword("pass");
+        assertEquals(HttpStatus.BAD_REQUEST, userController.loginUser(reqNull).getStatusCode());
+
+        // Empty
+        User reqEmpty = new User();
+        reqEmpty.setEmail("");
+        reqEmpty.setPassword("pass");
+        assertEquals(HttpStatus.BAD_REQUEST, userController.loginUser(reqEmpty).getStatusCode());
+    }
+
+    @Test
+    void testLoginUser_Validation_Password() {
+        // Null
+        User reqNull = new User();
+        reqNull.setEmail("a@b.c");
+        reqNull.setPassword(null);
+        assertEquals(HttpStatus.BAD_REQUEST, userController.loginUser(reqNull).getStatusCode());
+
+        // Empty
+        User reqEmpty = new User();
+        reqEmpty.setEmail("a@b.c");
+        reqEmpty.setPassword("");
+        assertEquals(HttpStatus.BAD_REQUEST, userController.loginUser(reqEmpty).getStatusCode());
     }
 
     @Test
@@ -179,7 +228,7 @@ class UserControllerTests {
         assertNull(res.getBody().getData().get("user").getPassword());
     }
 
-    // --- 4. Update User ---
+    // --- 4. Update User Validation Tests (Coverage for Name/Email null/empty) ---
     @Test
     void testUpdateUser_Unauthorized() {
         when(authContext.isAuthenticated()).thenReturn(false);
@@ -187,13 +236,31 @@ class UserControllerTests {
     }
 
     @Test
-    void testUpdateUser_InvalidInput() {
+    void testUpdateUser_Validation_Name() {
         when(authContext.isAuthenticated()).thenReturn(true);
-        User req = new User();
-        assertEquals(HttpStatus.BAD_REQUEST, userController.updateUser(req).getStatusCode());
-        
-        req.setName("Name");
-        assertEquals(HttpStatus.BAD_REQUEST, userController.updateUser(req).getStatusCode());
+        when(authContext.getAuthUser()).thenReturn(mockUser);
+
+        // Name Null
+        User reqNull = new User(null, "a@b.c", null);
+        assertEquals(HttpStatus.BAD_REQUEST, userController.updateUser(reqNull).getStatusCode());
+
+        // Name Empty
+        User reqEmpty = new User("", "a@b.c", null);
+        assertEquals(HttpStatus.BAD_REQUEST, userController.updateUser(reqEmpty).getStatusCode());
+    }
+
+    @Test
+    void testUpdateUser_Validation_Email() {
+        when(authContext.isAuthenticated()).thenReturn(true);
+        when(authContext.getAuthUser()).thenReturn(mockUser);
+
+        // Email Null
+        User reqNull = new User("Name", null, null);
+        assertEquals(HttpStatus.BAD_REQUEST, userController.updateUser(reqNull).getStatusCode());
+
+        // Email Empty
+        User reqEmpty = new User("Name", "", null);
+        assertEquals(HttpStatus.BAD_REQUEST, userController.updateUser(reqEmpty).getStatusCode());
     }
 
     @Test
@@ -218,7 +285,7 @@ class UserControllerTests {
         assertEquals(HttpStatus.OK, userController.updateUser(req).getStatusCode());
     }
 
-    // --- 5. Update Password ---
+    // --- 5. Update Password Validation Tests ---
     @Test
     void testUpdateUserPassword_Unauthorized() {
         when(authContext.isAuthenticated()).thenReturn(false);
@@ -226,11 +293,21 @@ class UserControllerTests {
     }
 
     @Test
-    void testUpdateUserPassword_InvalidInput() {
+    void testUpdateUserPassword_Validation() {
         when(authContext.isAuthenticated()).thenReturn(true);
         when(authContext.getAuthUser()).thenReturn(mockUser);
-        
+
+        // 1. OldPassword Null (Implicit by map.get missing key)
+        assertEquals(HttpStatus.BAD_REQUEST, userController.updateUserPassword(Map.of("newPassword", "new")).getStatusCode());
+
+        // 2. OldPassword Empty
+        assertEquals(HttpStatus.BAD_REQUEST, userController.updateUserPassword(Map.of("password", "", "newPassword", "new")).getStatusCode());
+
+        // 3. NewPassword Null (Implicit)
         assertEquals(HttpStatus.BAD_REQUEST, userController.updateUserPassword(Map.of("password", "old")).getStatusCode());
+
+        // 4. NewPassword Empty (Ini yang sering kelewatan, makanya kuning)
+        assertEquals(HttpStatus.BAD_REQUEST, userController.updateUserPassword(Map.of("password", "old", "newPassword", "")).getStatusCode());
     }
 
     @Test

@@ -14,7 +14,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.test.util.ReflectionTestUtils; // <--- PENTING
+import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
@@ -63,7 +63,6 @@ class PetControllerTests {
         mockPet.setPetCategory("Besar");
         mockPet.setOwnerPhone("08123456789");
 
-        // --- PERBAIKAN UTAMA: Inject AuthContext secara manual ---
         ReflectionTestUtils.setField(petController, "authContext", authContext);
     }
 
@@ -149,24 +148,75 @@ class PetControllerTests {
     void testCreatePet_Success_OtherType() {
         PetForm form = new PetForm();
         form.setPetType("Lainnya");
-        form.setOtherType("Iguana");
+        form.setOtherType("Iguana"); // Valid other type
         form.setQuantity(1);
 
         when(authContext.isAuthenticated()).thenReturn(true);
         when(authContext.getAuthUser()).thenReturn(mockUser);
+        // Intercept argument to check logic
         when(petService.createPet(eq(userId), any(Pet.class))).thenAnswer(i -> i.getArguments()[1]);
 
         ResponseEntity<ApiResponse<Pet>> response = petController.createPet(form);
         
         Pet created = response.getBody().getData();
-        assertEquals("Iguana", created.getPetType());
+        assertEquals("Iguana", created.getPetType()); // Logic line 77 hit
         assertNull(created.getPetCategory());
+    }
+
+    // --- NEW TEST FOR COVERAGE: Create Pet "Lainnya" but Null/Blank OtherType ---
+    @Test
+    void testCreatePet_Branch_Lainnya_NullOrBlank() {
+        when(authContext.isAuthenticated()).thenReturn(true);
+        when(authContext.getAuthUser()).thenReturn(mockUser);
+        when(petService.createPet(eq(userId), any(Pet.class))).thenAnswer(i -> i.getArguments()[1]);
+
+        // Case 1: Lainnya + Null
+        PetForm formNull = new PetForm();
+        formNull.setPetType("Lainnya");
+        formNull.setOtherType(null); // NULL
+        
+        ResponseEntity<ApiResponse<Pet>> res1 = petController.createPet(formNull);
+        // Expect: Type tetap "Lainnya" karena logic penggantian di-skip, Category jadi null karena bukan Anjing/Kucing
+        assertEquals("Lainnya", res1.getBody().getData().getPetType()); 
+        assertNull(res1.getBody().getData().getPetCategory());
+
+        // Case 2: Lainnya + Blank
+        PetForm formBlank = new PetForm();
+        formBlank.setPetType("Lainnya");
+        formBlank.setOtherType(""); // BLANK
+
+        ResponseEntity<ApiResponse<Pet>> res2 = petController.createPet(formBlank);
+        assertEquals("Lainnya", res2.getBody().getData().getPetType());
+    }
+
+    // --- NEW TEST FOR COVERAGE: Create Pet - Anjing/Kucing Keeps Category ---
+    @Test
+    void testCreatePet_Branch_AnjingOrKucing_KeepsCategory() {
+        when(authContext.isAuthenticated()).thenReturn(true);
+        when(authContext.getAuthUser()).thenReturn(mockUser);
+        when(petService.createPet(eq(userId), any(Pet.class))).thenAnswer(i -> i.getArguments()[1]);
+
+        // Case Anjing (Line 82 false)
+        PetForm formDog = new PetForm();
+        formDog.setPetType("Anjing");
+        formDog.setPetCategory("Besar");
+        
+        ResponseEntity<ApiResponse<Pet>> resDog = petController.createPet(formDog);
+        assertEquals("Besar", resDog.getBody().getData().getPetCategory()); // Not reset
+
+        // Case Kucing (Line 82 false part 2)
+        PetForm formCat = new PetForm();
+        formCat.setPetType("Kucing");
+        formCat.setPetCategory("VIP");
+
+        ResponseEntity<ApiResponse<Pet>> resCat = petController.createPet(formCat);
+        assertEquals("VIP", resCat.getBody().getData().getPetCategory()); // Not reset
     }
 
     @Test
     void testCreatePet_Success_ResetCategory() {
         PetForm form = new PetForm();
-        form.setPetType("Kelinci");
+        form.setPetType("Kelinci"); // Bukan Anjing/Kucing
         form.setPetCategory("HarusNull"); 
         form.setQuantity(1);
 
@@ -177,7 +227,7 @@ class PetControllerTests {
         ResponseEntity<ApiResponse<Pet>> response = petController.createPet(form);
 
         Pet created = response.getBody().getData();
-        assertNull(created.getPetCategory());
+        assertNull(created.getPetCategory()); // Line 83 hit
     }
 
     // --- 4. Update Pet ---
@@ -232,6 +282,63 @@ class PetControllerTests {
         });
 
         petController.updatePet(petId, form);
+    }
+
+    // --- NEW TEST FOR COVERAGE: Update Pet - Lainnya Null/Blank ---
+    @Test
+    void testUpdatePet_Branch_Lainnya_NullOrBlank() {
+        when(authContext.isAuthenticated()).thenReturn(true);
+        when(authContext.getAuthUser()).thenReturn(mockUser);
+        
+        // Setup existing pet
+        Pet existing = new Pet();
+        existing.setId(petId);
+        
+        when(petService.getPetById(petId)).thenReturn(existing);
+        when(petService.updatePet(eq(petId), any(Pet.class), eq(mockUser))).thenAnswer(i -> i.getArguments()[1]);
+
+        // Case Null
+        PetForm formNull = new PetForm();
+        formNull.setPetType("Lainnya");
+        formNull.setOtherType(null);
+        
+        ResponseEntity<ApiResponse<Pet>> res = petController.updatePet(petId, formNull);
+        assertEquals("Lainnya", res.getBody().getData().getPetType());
+
+        // Case Blank
+        PetForm formBlank = new PetForm();
+        formBlank.setPetType("Lainnya");
+        formBlank.setOtherType("");
+        
+        petController.updatePet(petId, formBlank);
+    }
+
+    // --- NEW TEST FOR COVERAGE: Update Pet - Anjing/Kucing Keeps Category ---
+    @Test
+    void testUpdatePet_Branch_AnjingOrKucing_KeepsCategory() {
+        when(authContext.isAuthenticated()).thenReturn(true);
+        when(authContext.getAuthUser()).thenReturn(mockUser);
+        
+        Pet existing = new Pet();
+        existing.setId(petId);
+        when(petService.getPetById(petId)).thenReturn(existing);
+        when(petService.updatePet(eq(petId), any(Pet.class), eq(mockUser))).thenAnswer(i -> i.getArguments()[1]);
+
+        // Case Anjing
+        PetForm formDog = new PetForm();
+        formDog.setPetType("Anjing");
+        formDog.setPetCategory("Small");
+        
+        ResponseEntity<ApiResponse<Pet>> res = petController.updatePet(petId, formDog);
+        assertEquals("Small", res.getBody().getData().getPetCategory());
+
+        // Case Kucing
+        PetForm formCat = new PetForm();
+        formCat.setPetType("Kucing");
+        formCat.setPetCategory("Big");
+        
+        ResponseEntity<ApiResponse<Pet>> resCat = petController.updatePet(petId, formCat);
+        assertEquals("Big", resCat.getBody().getData().getPetCategory());
     }
     
     @Test
