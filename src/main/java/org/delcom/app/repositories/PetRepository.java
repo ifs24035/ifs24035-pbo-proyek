@@ -15,9 +15,7 @@ public interface PetRepository extends JpaRepository<Pet, UUID> {
     // Menampilkan daftar hewan berdasarkan user, diurutkan dari yang terbaru
     List<Pet> findByUserIdOrderByCreatedAtDesc(UUID userId);
 
-    // PERBAIKAN QUERY:
-    // 1. Menggunakan CONCAT(:prefix, '%') agar parameter terbaca dengan benar.
-    // 2. Menggunakan nativeQuery = true agar fungsi SQL PostgreSQL berjalan.
-    @Query(value = "SELECT pet_code FROM pets WHERE pet_code LIKE CONCAT(:prefix, '%') ORDER BY LENGTH(pet_code) DESC, pet_code DESC LIMIT 1", nativeQuery = true)
-    String findLatestCode(@Param("prefix") String prefix);
+    // UPDATE: Mencari kode terakhir HANYA milik User tertentu
+    @Query(value = "SELECT pet_code FROM pets WHERE user_id = :userId AND pet_code LIKE CONCAT(:prefix, '%') ORDER BY length(pet_code) DESC, pet_code DESC LIMIT 1", nativeQuery = true)
+    String findLatestCodeByUser(@Param("prefix") String prefix, @Param("userId") UUID userId);
 }

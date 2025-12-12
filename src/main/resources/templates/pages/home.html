@@ -84,7 +84,7 @@
         position: absolute;
         left: 50.5%;
         /* Atur tinggi rendahnya logo di sini (40% biasanya pas di tengah donat) */
-        top: 37.5%; 
+        top: 41%; 
         transform: translate(-50%, -50%);
         font-size: 6rem; 
         color: #e8dcff; /* Ungu Soft */
@@ -279,19 +279,29 @@
             <div class="card shadow-sm border-0 h-100">
                 <div class="card-header bg-white fw-bold">Statistik Hewan</div>
                 
-                <!-- PERUBAHAN DISINI: Tambahkan class 'card-body-flex' -->
                 <div class="card-body card-body-flex p-3">
-                    
-                    <div class="chart-container">
-                        <!-- Ikon Tengah -->
-                        <div class="chart-center-icon">
+                    <div class="chart-container position-relative">
+                        
+                        <!-- 1. Ikon Background (Hanya muncul jika ada data) -->
+                        <div id="chartBgIcon" class="chart-center-icon">
                             <i class="fas fa-paw"></i>
                         </div>
 
-                        <!-- Canvas Chart -->
+                        <!-- 2. Canvas Chart -->
                         <canvas id="petChart"></canvas>
-                    </div>
 
+                        <!-- 3. Tampilan EMPTY STATE (Muncul jika data kosong) -->
+                        <!-- Awalnya disembunyikan (d-none), nanti JS yang memunculkan -->
+                        <div id="chartEmptyState" class="d-none text-center position-absolute top-50 start-50 translate-middle w-100">
+                            <div class="mb-3">
+                                <!-- Ikon Kotak/Folder Kosong -->
+                                <i class="fas fa-folder-open fa-4x" style="color: #e8dcff;"></i>
+                            </div>
+                            <h5 class="fw-bold text-secondary" style="font-family: 'Fredoka', sans-serif;">Belum Ada Data</h5>
+                            <p class="small text-muted mb-0">Data statistik akan muncul<br>setelah hewan ditambahkan.</p>
+                        </div>
+
+                    </div>
                 </div>
             </div>
         </div>
@@ -401,20 +411,32 @@
 <!-- Script Chart Update -->
 <script th:inline="javascript">
     /*<![CDATA[*/
-    // Daftarkan Plugin Datalabels
     Chart.register(ChartDataLabels);
 
     const labels = /*[[${chartLabels}]]*/ [];
     const data = /*[[${chartData}]]*/ [];
-    const ctx = document.getElementById('petChart').getContext('2d');
+    
+    // Ambil elemen-elemen HTML
+    const canvas = document.getElementById('petChart');
+    const ctx = canvas.getContext('2d');
+    const bgIcon = document.getElementById('chartBgIcon');
+    const emptyState = document.getElementById('chartEmptyState');
 
+    // LOGIKA TAMPILAN
     if (labels.length > 0) {
+        // --- JIKA ADA DATA ---
+        // 1. Pastikan Empty State sembunyi
+        emptyState.classList.add('d-none');
+        // 2. Pastikan Ikon Background muncul
+        bgIcon.classList.remove('d-none');
+        // 3. Render Chart
         new Chart(ctx, {
             type: 'doughnut',
             data: {
                 labels: labels,
                 datasets: [{
                     data: data,
+                    // Warna-warni Chart
                     backgroundColor: ['#230C33', '#1cc88a', '#36b9cc', '#f6c23e', '#e74a3b', '#A55EEA', '#FF6FB5', '#C1436A'],
                     borderWidth: 2,
                     borderColor: '#ffffff'
@@ -422,19 +444,13 @@
             },
             options: {
                 responsive: true,
-                maintainAspectRatio: false, // WAJIB FALSE agar chart bisa membesar sesuai container height
-                cutout: '70%', // Lubang donat diperbesar agar ikon muat
-                layout: {
-                    padding: 10
-                },
+                maintainAspectRatio: false,
+                cutout: '70%', 
+                layout: { padding: 10 },
                 plugins: {
                     legend: {
                         position: 'bottom',
-                        labels: { 
-                            boxWidth: 12, 
-                            padding: 20,
-                            font: { size: 11 } 
-                        }
+                        labels: { boxWidth: 12, padding: 20, font: { size: 11 } }
                     },
                     datalabels: {
                         color: '#fff',
@@ -443,7 +459,6 @@
                             let sum = 0;
                             let dataArr = ctx.chart.data.datasets[0].data;
                             dataArr.map(data => { sum += data; });
-                            // Cegah pembagian nol
                             if (sum === 0) return "0%";
                             let percentage = (value * 100 / sum).toFixed(0) + "%";
                             return percentage;
@@ -453,8 +468,13 @@
             }
         });
     } else {
-        ctx.font = "14px Arial";
-        ctx.fillText("Data Kosong", 50, 75);
+        // --- JIKA DATA KOSONG ---
+        // 1. Sembunyikan Canvas Chart (biar tidak makan tempat)
+        canvas.style.display = 'none';
+        // 2. Sembunyikan Ikon Background Paw (biar tidak tabrakan)
+        bgIcon.style.display = 'none';
+        // 3. Munculkan Tampilan Empty State yang Cantik
+        emptyState.classList.remove('d-none');
     }
     /*]]>*/
 </script>

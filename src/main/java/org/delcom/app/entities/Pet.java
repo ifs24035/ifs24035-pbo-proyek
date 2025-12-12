@@ -17,8 +17,8 @@ public class Pet {
     @Column(name = "user_id", nullable = false)
     private UUID userId;
 
-    @Column(name = "pet_code", unique = true)
-    private String petCode; // Contoh: ANJ-K-001
+     @Column(name = "pet_code", nullable = false) 
+    private String petCode;
 
     @Column(name = "pet_type", nullable = false)
     private String petType;

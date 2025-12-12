@@ -83,20 +83,22 @@ public class PetController {
             pet.setPetCategory(null);
         }
 
-        // Generate Kode Unik
-        String uniqueCode = petService.generatePetCode(pet);
+        // Generate Kode Unik (Pass user)
+        String uniqueCode = petService.generatePetCode(pet, user);
         pet.setPetCode(uniqueCode);
 
         Pet createdPet = petService.createPet(user.getId(), pet);
         return ResponseEntity.ok(new ApiResponse<>("success", "Hewan berhasil ditambahkan", createdPet));
     }
 
-    // 4. Update Pet
+    // 4. Update Pet (PERBAIKAN UTAMA DISINI)
     @PutMapping("/{id}")
     public ResponseEntity<ApiResponse<Pet>> updatePet(@PathVariable UUID id, @RequestBody PetForm form) {
         if (!authContext.isAuthenticated()) {
             return ResponseEntity.status(401).body(new ApiResponse<>("fail", "Unauthorized", null));
         }
+        // AMBIL USER
+        User user = authContext.getAuthUser();
 
         Pet existingPet = petService.getPetById(id);
         if (existingPet == null) {
@@ -122,7 +124,9 @@ public class PetController {
             existingPet.setPetCategory(null);
         }
 
-        Pet updatedPet = petService.updatePet(id, existingPet);
+        // PERBAIKAN: Masukkan 'user' sebagai parameter ke-3
+        Pet updatedPet = petService.updatePet(id, existingPet, user);
+        
         return ResponseEntity.ok(new ApiResponse<>("success", "Data hewan berhasil diperbarui", updatedPet));
     }
 

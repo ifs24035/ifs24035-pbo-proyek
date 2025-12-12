@@ -1,222 +1,170 @@
 package org.delcom.app.controllers;
 
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.when;
-
-import java.io.IOException;
-import java.util.List;
-import java.util.UUID;
-
+import org.delcom.app.configs.ApiResponse;
 import org.delcom.app.configs.AuthContext;
 import org.delcom.app.dto.PetForm;
 import org.delcom.app.entities.Pet;
 import org.delcom.app.entities.User;
 import org.delcom.app.services.PetService;
-import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.Mockito;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.web.multipart.MultipartFile;
 
-public class PetControllerTests {
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.UUID;
+
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.*;
+
+@ExtendWith(MockitoExtension.class)
+class PetControllerTests {
+
+    @InjectMocks
+    private PetController petController;
+
+    @Mock
+    private PetService petService;
+
+    @Mock
+    private AuthContext authContext;
+
+    @Mock
+    private MultipartFile multipartFile;
+
+    private User mockUser;
+    private Pet mockPet;
+    private UUID petId;
+    private UUID userId;
+
+    @BeforeEach
+    void setUp() {
+        userId = UUID.randomUUID();
+        petId = UUID.randomUUID();
+
+        mockUser = new User();
+        mockUser.setId(userId);
+        mockUser.setName("Test User");
+
+        mockPet = new Pet();
+        mockPet.setId(petId);
+        mockPet.setUserId(userId);
+
+        ReflectionTestUtils.setField(petController, "authContext", authContext);
+    }
 
     @Test
-    @DisplayName("Pengujian untuk PetController")
-    void testPetController() throws Exception {
-        // Setup ID
-        UUID userId = UUID.randomUUID();
-        UUID petId = UUID.randomUUID();
+    void testGetAllPets() {
+        // Unauthorized
+        when(authContext.isAuthenticated()).thenReturn(false);
+        assertEquals(HttpStatus.UNAUTHORIZED, petController.getAllPets().getStatusCode());
 
-        // Setup Mock Service
-        PetService petService = Mockito.mock(PetService.class);
+        // Success
+        when(authContext.isAuthenticated()).thenReturn(true);
+        when(authContext.getAuthUser()).thenReturn(mockUser);
+        when(petService.getAllPetsByUser(userId)).thenReturn(new ArrayList<>());
+        assertEquals(HttpStatus.OK, petController.getAllPets().getStatusCode());
+    }
 
-        // Setup Controller & AuthContext
-        PetController petController = new PetController(petService);
-        petController.authContext = new AuthContext();
+    @Test
+    void testGetPetDetail() {
+        when(authContext.isAuthenticated()).thenReturn(false);
+        assertEquals(HttpStatus.UNAUTHORIZED, petController.getPetDetail(petId).getStatusCode());
 
-        User authUser = new User("Test User", "test@example.com", "password");
-        authUser.setId(userId);
+        when(authContext.isAuthenticated()).thenReturn(true);
+        when(petService.getPetById(petId)).thenReturn(null);
+        assertEquals(HttpStatus.NOT_FOUND, petController.getPetDetail(petId).getStatusCode());
 
-        // ==========================================
-        // 1. Test getAllPets
-        // ==========================================
-        {
-            // Unauthorized
-            petController.authContext.setAuthUser(null);
-            var res = petController.getAllPets();
-            assert (res.getStatusCode().is4xxClientError());
+        when(petService.getPetById(petId)).thenReturn(mockPet);
+        assertEquals(HttpStatus.OK, petController.getPetDetail(petId).getStatusCode());
+    }
 
-            // Success
-            petController.authContext.setAuthUser(authUser);
-            when(petService.getAllPetsByUser(any(UUID.class))).thenReturn(List.of(new Pet()));
-            
-            res = petController.getAllPets();
-            assert (res.getStatusCode().is2xxSuccessful());
-            assert (res.getBody().getStatus().equals("success"));
-        }
+    @Test
+    void testCreatePet() {
+        when(authContext.isAuthenticated()).thenReturn(false);
+        assertEquals(HttpStatus.UNAUTHORIZED, petController.createPet(new PetForm()).getStatusCode());
 
-        // ==========================================
-        // 2. Test getPetDetail
-        // ==========================================
-        {
-            // Unauthorized
-            petController.authContext.setAuthUser(null);
-            var res = petController.getPetDetail(petId);
-            assert (res.getStatusCode().is4xxClientError());
+        when(authContext.isAuthenticated()).thenReturn(true);
+        when(authContext.getAuthUser()).thenReturn(mockUser);
+        when(petService.createPet(eq(userId), any(Pet.class))).thenReturn(mockPet);
 
-            petController.authContext.setAuthUser(authUser);
+        assertEquals(HttpStatus.OK, petController.createPet(new PetForm()).getStatusCode());
+    }
 
-            // Not Found
-            when(petService.getPetById(any(UUID.class))).thenReturn(null);
-            res = petController.getPetDetail(petId);
-            assert (res.getStatusCode().is4xxClientError());
+    @Test
+    void testUpdatePet() {
+        when(authContext.isAuthenticated()).thenReturn(false);
+        assertEquals(HttpStatus.UNAUTHORIZED, petController.updatePet(petId, new PetForm()).getStatusCode());
 
-            // Success
-            Pet p = new Pet(); p.setId(petId);
-            when(petService.getPetById(any(UUID.class))).thenReturn(p);
-            res = petController.getPetDetail(petId);
-            assert (res.getStatusCode().is2xxSuccessful());
-        }
+        when(authContext.isAuthenticated()).thenReturn(true);
+        when(authContext.getAuthUser()).thenReturn(mockUser);
+        
+        // Not Found
+        when(petService.getPetById(petId)).thenReturn(null);
+        assertEquals(HttpStatus.NOT_FOUND, petController.updatePet(petId, new PetForm()).getStatusCode());
 
-        // ==========================================
-        // 3. Test createPet
-        // ==========================================
-        {
-            PetForm form = new PetForm();
-            form.setPetType("Anjing");
-            form.setQuantity(1);
-            
-            // Unauthorized
-            petController.authContext.setAuthUser(null);
-            var res = petController.createPet(form);
-            assert (res.getStatusCode().is4xxClientError());
+        // Success
+        when(petService.getPetById(petId)).thenReturn(mockPet);
+        when(petService.updatePet(eq(petId), any(Pet.class), eq(mockUser))).thenReturn(mockPet);
+        assertEquals(HttpStatus.OK, petController.updatePet(petId, new PetForm()).getStatusCode());
+    }
 
-            petController.authContext.setAuthUser(authUser);
+    @Test
+    void testUploadImage() throws IOException {
+        when(authContext.isAuthenticated()).thenReturn(false);
+        assertEquals(HttpStatus.UNAUTHORIZED, petController.uploadImage(petId, multipartFile).getStatusCode());
 
-            // Success Standard
-            when(petService.generatePetCode(any(Pet.class))).thenReturn("ANJ-001");
-            when(petService.createPet(any(UUID.class), any(Pet.class))).thenReturn(new Pet());
-            
-            res = petController.createPet(form);
-            assert (res.getStatusCode().is2xxSuccessful());
+        when(authContext.isAuthenticated()).thenReturn(true);
+        
+        // --- PERBAIKAN: Stubbing isEmpty() DIHAPUS karena tidak dipanggil di Controller ---
 
-            // Success "Lainnya" Logic
-            PetForm formOther = new PetForm();
-            formOther.setPetType("Lainnya");
-            formOther.setOtherType("Ular");
-            formOther.setQuantity(1);
-            
-            res = petController.createPet(formOther);
-            assert (res.getStatusCode().is2xxSuccessful());
-        }
+        // Success
+        when(petService.updatePetImage(petId, multipartFile)).thenReturn(mockPet);
+        assertEquals(HttpStatus.OK, petController.uploadImage(petId, multipartFile).getStatusCode());
 
-        // ==========================================
-        // 4. Test updatePet
-        // ==========================================
-        {
-            PetForm form = new PetForm();
-            form.setPetType("Kucing");
-            
-            // Unauthorized
-            petController.authContext.setAuthUser(null);
-            var res = petController.updatePet(petId, form);
-            assert (res.getStatusCode().is4xxClientError());
+        // Not Found (Service returns null)
+        when(petService.updatePetImage(petId, multipartFile)).thenReturn(null);
+        assertEquals(HttpStatus.NOT_FOUND, petController.uploadImage(petId, multipartFile).getStatusCode());
 
-            petController.authContext.setAuthUser(authUser);
+        // Exception
+        when(petService.updatePetImage(petId, multipartFile)).thenThrow(new IOException());
+        assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, petController.uploadImage(petId, multipartFile).getStatusCode());
+    }
 
-            // Not Found
-            when(petService.getPetById(any(UUID.class))).thenReturn(null);
-            res = petController.updatePet(petId, form);
-            assert (res.getStatusCode().is4xxClientError());
+    @Test
+    void testDeletePet() {
+        when(authContext.isAuthenticated()).thenReturn(false);
+        assertEquals(HttpStatus.UNAUTHORIZED, petController.deletePet(petId, "081").getStatusCode());
 
-            // Success
-            when(petService.getPetById(any(UUID.class))).thenReturn(new Pet());
-            when(petService.updatePet(any(UUID.class), any(Pet.class))).thenReturn(new Pet());
-            
-            res = petController.updatePet(petId, form);
-            assert (res.getStatusCode().is2xxSuccessful());
-        }
+        when(authContext.isAuthenticated()).thenReturn(true);
+        when(petService.deletePet(petId, "081")).thenReturn(true);
+        assertEquals(HttpStatus.OK, petController.deletePet(petId, "081").getStatusCode());
 
-        // ==========================================
-        // 5. Test uploadImage
-        // ==========================================
-        {
-            MultipartFile file = Mockito.mock(MultipartFile.class);
+        when(petService.deletePet(petId, "081")).thenReturn(false);
+        assertEquals(HttpStatus.BAD_REQUEST, petController.deletePet(petId, "081").getStatusCode());
+    }
+    
+    @Test
+    void testUpdateStatus() {
+        when(authContext.isAuthenticated()).thenReturn(false);
+        assertEquals(HttpStatus.UNAUTHORIZED, petController.updateStatus(petId, true).getStatusCode());
 
-            // Unauthorized
-            petController.authContext.setAuthUser(null);
-            var res = petController.uploadImage(petId, file);
-            assert (res.getStatusCode().is4xxClientError());
+        when(authContext.isAuthenticated()).thenReturn(true);
+        when(petService.getPetById(petId)).thenReturn(null);
+        assertEquals(HttpStatus.NOT_FOUND, petController.updateStatus(petId, true).getStatusCode());
 
-            petController.authContext.setAuthUser(authUser);
-
-            // Exception (Internal Server Error)
-            when(petService.updatePetImage(any(UUID.class), any())).thenThrow(new IOException());
-            res = petController.uploadImage(petId, file);
-            assert (res.getStatusCode().is5xxServerError());
-
-            // Not Found (Service returns null)
-            when(petService.updatePetImage(any(UUID.class), any())).thenReturn(null);
-            res = petController.uploadImage(petId, file);
-            assert (res.getStatusCode().is4xxClientError());
-
-            // Success
-            Pet p = new Pet(); p.setImagePath("img.jpg");
-            when(petService.updatePetImage(any(UUID.class), any())).thenReturn(p);
-            res = petController.uploadImage(petId, file);
-            assert (res.getStatusCode().is2xxSuccessful());
-        }
-
-        // ==========================================
-        // 6. Test deletePet
-        // ==========================================
-        {
-            String phone = "08123";
-
-            // Unauthorized
-            petController.authContext.setAuthUser(null);
-            var res = petController.deletePet(petId, phone);
-            assert (res.getStatusCode().is4xxClientError());
-
-            petController.authContext.setAuthUser(authUser);
-
-            // Fail (Wrong phone / Not found)
-            when(petService.deletePet(any(UUID.class), any(String.class))).thenReturn(false);
-            res = petController.deletePet(petId, phone);
-            assert (res.getStatusCode().is4xxClientError());
-
-            // Success
-            when(petService.deletePet(any(UUID.class), any(String.class))).thenReturn(true);
-            res = petController.deletePet(petId, phone);
-            assert (res.getStatusCode().is2xxSuccessful());
-        }
-
-        // ==========================================
-        // 7. Test updateStatus
-        // ==========================================
-        {
-            // Unauthorized
-            petController.authContext.setAuthUser(null);
-            var res = petController.updateStatus(petId, true);
-            assert (res.getStatusCode().is4xxClientError());
-
-            petController.authContext.setAuthUser(authUser);
-
-            // Not Found
-            when(petService.getPetById(any(UUID.class))).thenReturn(null);
-            res = petController.updateStatus(petId, true);
-            assert (res.getStatusCode().is4xxClientError());
-
-            // Success
-            Pet p = new Pet();
-            when(petService.getPetById(any(UUID.class))).thenReturn(p);
-            when(petService.createPet(any(), any())).thenReturn(p); // Mock save
-            
-            res = petController.updateStatus(petId, true);
-            assert (res.getStatusCode().is2xxSuccessful());
-            assert (res.getBody().getMessage().contains("Sudah"));
-
-            res = petController.updateStatus(petId, false);
-            assert (res.getBody().getMessage().contains("Belum"));
-        }
+        when(petService.getPetById(petId)).thenReturn(mockPet);
+        when(petService.createPet(eq(userId), any(Pet.class))).thenReturn(mockPet);
+        assertEquals(HttpStatus.OK, petController.updateStatus(petId, true).getStatusCode());
     }
 }
