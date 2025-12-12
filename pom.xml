@@ -14,8 +14,8 @@
 	<groupId>org.delcom</groupId>
 	<artifactId>spring-pet</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
-	<name>Spring Todos</name>
-	<description>Todo Application with Spring Boot</description>
+	<name>Spring Pet</name>
+	<description>PetShop Application with Spring Boot</description>
 
 	<properties>
 		<java.version>25</java.version>
