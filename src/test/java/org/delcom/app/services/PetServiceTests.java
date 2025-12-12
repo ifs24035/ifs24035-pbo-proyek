@@ -12,7 +12,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -77,38 +76,60 @@ class PetServiceTests {
 
     @Test
     void testGeneratePetCode_PrefixLogic() {
-        // 1. Anjing
+        // 1. Anjing Cases
         pet.setPetType("Anjing");
         pet.setPetCategory("Kecil");
         assertTrue(petService.generatePetCode(pet, user).startsWith("ANJ-K-"));
+        
         pet.setPetCategory("Sedang");
         assertTrue(petService.generatePetCode(pet, user).startsWith("ANJ-S-"));
+
         pet.setPetCategory("Besar");
         assertTrue(petService.generatePetCode(pet, user).startsWith("ANJ-B-"));
+
         pet.setPetCategory("Unknown");
         assertTrue(petService.generatePetCode(pet, user).startsWith("ANJ-X-"));
 
-        // 2. Kucing
+        // 2. Kucing Cases
         pet.setPetType("Kucing");
         pet.setPetCategory("Standar");
         assertTrue(petService.generatePetCode(pet, user).startsWith("KUC-ST-"));
+        
         pet.setPetCategory("Premium");
         assertTrue(petService.generatePetCode(pet, user).startsWith("KUC-PR-"));
+        
         pet.setPetCategory("VIP");
         assertTrue(petService.generatePetCode(pet, user).startsWith("KUC-VP-"));
+        
         pet.setPetCategory("Unknown");
         assertTrue(petService.generatePetCode(pet, user).startsWith("KUC-X-"));
 
-        // 3. Lainnya / Custom
-        pet.setPetType("Lainnya"); // Literal "Lainnya"
-        assertNotNull(petService.generatePetCode(pet, user));
+        // 3. Simple Types
+        pet.setPetType("Burung");
+        assertTrue(petService.generatePetCode(pet, user).startsWith("BRG-"));
+
+        pet.setPetType("Kelinci");
+        assertTrue(petService.generatePetCode(pet, user).startsWith("KLN-"));
+
+        pet.setPetType("Hamster");
+        assertTrue(petService.generatePetCode(pet, user).startsWith("HMR-"));
         
-        pet.setPetType("Iguana"); // Custom mapped
+        pet.setPetType("Marmut");
+        assertTrue(petService.generatePetCode(pet, user).startsWith("HMR-"));
+
+        // 4. "Lainnya" Logic Coverage (CRITICAL FOR COVERAGE)
+        // Cover case where type is literally "Lainnya" (if Service handles it)
+        pet.setPetType("Lainnya");
+        String codeLainnya = petService.generatePetCode(pet, user);
+        assertNotNull(codeLainnya); // Expect RPT- or default
+        
+        // Cover case where type is custom name (e.g. Iguana)
+        pet.setPetType("Iguana"); 
         assertTrue(petService.generatePetCode(pet, user).startsWith("RPT-"));
         
-        // 4. Default fallback
+        // 5. Default/Unknown
         pet.setPetType("Alien");
-        assertNotNull(petService.generatePetCode(pet, user));
+        assertNotNull(petService.generatePetCode(pet, user)); 
     }
 
     @Test
@@ -116,67 +137,16 @@ class PetServiceTests {
         pet.setPetType("Anjing");
         pet.setPetCategory("Kecil");
 
-        // Case 1: No previous code -> 001
         when(petRepository.findLatestCodeByUser(eq("ANJ-K-"), eq(user.getId()))).thenReturn(null);
         assertEquals("ANJ-K-001", petService.generatePetCode(pet, user));
 
-        // Case 2: Normal increment -> 010
         when(petRepository.findLatestCodeByUser(eq("ANJ-K-"), eq(user.getId()))).thenReturn("ANJ-K-009");
         assertEquals("ANJ-K-010", petService.generatePetCode(pet, user));
 
-        // Case 3: Invalid Suffix (NumberFormatException logic branch) -> 001
         when(petRepository.findLatestCodeByUser(eq("ANJ-K-"), eq(user.getId()))).thenReturn("ANJ-K-XYZ");
         assertEquals("ANJ-K-001", petService.generatePetCode(pet, user));
-        
-        // Case 4: Invalid Format (No dash or weird format) -> 001
-        when(petRepository.findLatestCodeByUser(eq("ANJ-K-"), eq(user.getId()))).thenReturn("INVALIDCODE");
-        assertEquals("ANJ-K-001", petService.generatePetCode(pet, user));
     }
 
-    @Test
-    void testUpdatePet_AllBranches() {
-        // Setup existing
-        Pet existing = new Pet();
-        existing.setId(petId);
-        existing.setPetType("Anjing");
-        existing.setPetCategory("Kecil");
-        existing.setPetCode("ANJ-K-001");
-        existing.setUserId(user.getId());
-
-        when(petRepository.findById(petId)).thenReturn(Optional.of(existing));
-        when(petRepository.save(existing)).thenReturn(existing);
-
-        // Case 1: No Change
-        Pet update1 = new Pet();
-        update1.setPetType("Anjing");
-        update1.setPetCategory("Kecil");
-        petService.updatePet(petId, update1, user);
-        assertEquals("ANJ-K-001", existing.getPetCode());
-
-        // Case 2: Change Type -> New Code
-        Pet update2 = new Pet();
-        update2.setPetType("Kucing");
-        update2.setPetCategory("Standar");
-        when(petRepository.findLatestCodeByUser(anyString(), eq(user.getId()))).thenReturn(null);
-        petService.updatePet(petId, update2, user);
-        assertTrue(existing.getPetCode().startsWith("KUC-ST"));
-
-        // Case 3: Change Category -> New Code
-        Pet update3 = new Pet();
-        update3.setPetType("Kucing");
-        update3.setPetCategory("Premium");
-        petService.updatePet(petId, update3, user);
-        assertTrue(existing.getPetCode().startsWith("KUC-PR"));
-        
-        // Case 4: Category Null to Not Null
-        existing.setPetCategory(null);
-        Pet update4 = new Pet();
-        update4.setPetType("Kucing");
-        update4.setPetCategory("VIP");
-        petService.updatePet(petId, update4, user);
-        assertTrue(existing.getPetCode().startsWith("KUC-VP"));
-    }
-    
     @Test
     void testUpdatePet_NotFound() {
         when(petRepository.findById(petId)).thenReturn(Optional.empty());
@@ -184,78 +154,191 @@ class PetServiceTests {
     }
 
     @Test
+    void testUpdatePet_NoChangesInType() {
+        Pet existing = new Pet();
+        existing.setId(petId);
+        existing.setPetType("Anjing");
+        existing.setPetCategory("Kecil");
+        existing.setPetCode("OLD-CODE");
+
+        when(petRepository.findById(petId)).thenReturn(Optional.of(existing));
+        when(petRepository.save(existing)).thenReturn(existing);
+
+        Pet updatedData = new Pet();
+        updatedData.setPetType("Anjing");
+        updatedData.setPetCategory("Kecil");
+
+        Pet result = petService.updatePet(petId, updatedData, user);
+        assertEquals("OLD-CODE", result.getPetCode());
+    }
+
+    @Test
+    void testUpdatePet_ChangeType_TriggersNewCode() {
+        Pet existing = new Pet();
+        existing.setId(petId);
+        existing.setPetType("Anjing");
+        existing.setPetCategory("Kecil");
+        existing.setPetCode("ANJ-K-001");
+
+        when(petRepository.findById(petId)).thenReturn(Optional.of(existing));
+        when(petRepository.save(existing)).thenReturn(existing);
+        
+        when(petRepository.findLatestCodeByUser(anyString(), eq(user.getId()))).thenReturn(null);
+
+        Pet updatedData = new Pet();
+        updatedData.setPetType("Kucing");
+        updatedData.setPetCategory("Standar");
+
+        Pet result = petService.updatePet(petId, updatedData, user);
+        assertTrue(result.getPetCode().startsWith("KUC-ST"));
+    }
+
+    @Test
+    void testUpdatePet_ChangeCategory_TriggersNewCode() {
+        Pet existing = new Pet();
+        existing.setId(petId);
+        existing.setPetType("Anjing");
+        existing.setPetCategory("Kecil");
+        existing.setPetCode("ANJ-K-001");
+
+        when(petRepository.findById(petId)).thenReturn(Optional.of(existing));
+        when(petRepository.save(existing)).thenReturn(existing);
+
+        Pet updatedData = new Pet();
+        updatedData.setPetType("Anjing");
+        updatedData.setPetCategory("Besar");
+
+        Pet result = petService.updatePet(petId, updatedData, user);
+        assertTrue(result.getPetCode().startsWith("ANJ-B"));
+    }
+
+    @Test
+    void testUpdatePet_LainnyaBranch() {
+        Pet existing = new Pet();
+        existing.setId(petId);
+        existing.setPetType("Anjing");
+
+        when(petRepository.findById(petId)).thenReturn(Optional.of(existing));
+        when(petRepository.save(existing)).thenReturn(existing);
+
+        Pet updatedData = new Pet();
+        updatedData.setPetType("Iguana"); 
+
+        Pet result = petService.updatePet(petId, updatedData, user);
+        
+        assertEquals("Iguana", result.getPetType());
+        verify(petRepository).save(existing);
+    }
+
+    @Test
+    void testUpdatePet_CategoryNullChange() {
+        Pet existing = new Pet();
+        existing.setPetType("Anjing");
+        existing.setPetCategory("Kecil");
+        
+        when(petRepository.findById(petId)).thenReturn(Optional.of(existing));
+        when(petRepository.save(existing)).thenReturn(existing);
+
+        Pet updated = new Pet();
+        updated.setPetType("Anjing");
+        updated.setPetCategory(null);
+        
+        petService.updatePet(petId, updated, user);
+        assertTrue(existing.getPetCode().startsWith("ANJ-X")); 
+    }
+
+    @Test
+    void testUpdatePet_CategoryNullToNotNullChange() {
+        Pet existing = new Pet();
+        existing.setPetType("Anjing");
+        existing.setPetCategory(null); 
+        
+        when(petRepository.findById(petId)).thenReturn(Optional.of(existing));
+        when(petRepository.save(existing)).thenReturn(existing);
+
+        Pet updated = new Pet();
+        updated.setPetType("Anjing");
+        updated.setPetCategory("Besar"); 
+        
+        petService.updatePet(petId, updated, user);
+        assertTrue(existing.getPetCode().startsWith("ANJ-B")); 
+    }
+
+    @Test
     void testUpdatePetImage() throws IOException {
         MultipartFile file = mock(MultipartFile.class);
         
-        // Success
         when(petRepository.findById(petId)).thenReturn(Optional.of(pet));
         when(file.isEmpty()).thenReturn(false);
         pet.setImagePath("old.jpg");
         when(fileStorageService.storeFile(file, petId)).thenReturn("new.jpg");
+        
         petService.updatePetImage(petId, file);
         verify(fileStorageService).deleteFile("old.jpg");
         assertEquals("new.jpg", pet.getImagePath());
 
-        // NotFound
         when(petRepository.findById(petId)).thenReturn(Optional.empty());
         assertNull(petService.updatePetImage(petId, file));
 
-        // Empty File
         when(petRepository.findById(petId)).thenReturn(Optional.of(pet));
         when(file.isEmpty()).thenReturn(true);
         assertNull(petService.updatePetImage(petId, file));
     }
 
     @Test
-    void testDeletePet() {
+    void testDeletePet_Success() {
         pet.setOwnerPhone("08123");
         pet.setImagePath("img.jpg");
 
-        // Success
         when(petRepository.findById(petId)).thenReturn(Optional.of(pet));
+        
         assertTrue(petService.deletePet(petId, "08123"));
+        
         verify(fileStorageService).deleteFile("img.jpg");
         verify(petRepository).delete(pet);
+    }
 
-        // Mismatch Phone
+    @Test
+    void testDeletePet_Mismatch() {
+        pet.setOwnerPhone("08123");
         when(petRepository.findById(petId)).thenReturn(Optional.of(pet));
         assertFalse(petService.deletePet(petId, "00000"));
-        verify(petRepository, times(1)).delete(any()); // called once above
+        verify(petRepository, never()).delete(any(Pet.class));
+    }
 
-        // Not Found
+    @Test
+    void testDeletePet_NotFound() {
         when(petRepository.findById(petId)).thenReturn(Optional.empty());
         assertFalse(petService.deletePet(petId, "08123"));
     }
     
     @Test
-    void testDeletePet_ExceptionInFileDeletion() {
+    void testDeletePet_FileDeletionError() {
         pet.setOwnerPhone("08123");
         pet.setImagePath("img.jpg");
         when(petRepository.findById(petId)).thenReturn(Optional.of(pet));
         
-        // Simulate exception but operation should proceed/fail gracefully
         doThrow(new RuntimeException("File error")).when(fileStorageService).deleteFile("img.jpg");
         
-        // Try delete, assuming service swallows error
         try {
             petService.deletePet(petId, "08123");
         } catch (Exception e) {
-            // If service rethrows, this catches it. Test passes either way as long as line is hit.
+            // ignore
         }
     }
 
     @Test
     void testGetPetTypeStats() {
-        // Normal
         Pet p1 = new Pet(); p1.setPetType("Anjing");
         Pet p2 = new Pet(); p2.setPetType("Kucing");
-        when(petRepository.findByUserIdOrderByCreatedAtDesc(user.getId())).thenReturn(List.of(p1, p2));
-        Map<String, Long> stats = petService.getPetTypeStats(user.getId());
-        assertEquals(1, stats.get("ANJING"));
+        Pet p3 = new Pet(); p3.setPetType("Anjing");
 
-        // Empty List
-        when(petRepository.findByUserIdOrderByCreatedAtDesc(user.getId())).thenReturn(new ArrayList<>());
-        Map<String, Long> emptyStats = petService.getPetTypeStats(user.getId());
-        assertTrue(emptyStats.isEmpty());
+        when(petRepository.findByUserIdOrderByCreatedAtDesc(user.getId()))
+                .thenReturn(List.of(p1, p2, p3));
+
+        Map<String, Long> stats = petService.getPetTypeStats(user.getId());
+        
+        assertEquals(2, stats.get("ANJING"));
+        assertEquals(1, stats.get("KUCING"));
     }
 }

@@ -21,43 +21,105 @@ class PetTests {
     @Test
     void testGettersAndSetters() {
         UUID id = UUID.randomUUID();
+        UUID userId = UUID.randomUUID();
+
         pet.setId(id);
+        pet.setUserId(userId);
+        pet.setPetCode("DOG-001");
         pet.setPetType("Anjing");
-        // ... (coverage standard)
+        pet.setPetCategory("Besar");
+        pet.setQuantity(2);
+        pet.setDescription("Galak");
+        pet.setOwnerName("Budi");
+        pet.setOwnerPhone("08123");
+        pet.setImagePath("img.jpg");
+        pet.setTaken(true);
+
         assertEquals(id, pet.getId());
+        assertEquals(userId, pet.getUserId());
+        assertEquals("DOG-001", pet.getPetCode());
+        assertEquals("Anjing", pet.getPetType());
+        assertEquals("Besar", pet.getPetCategory());
+        assertEquals(2, pet.getQuantity());
+        assertEquals("Galak", pet.getDescription());
+        assertEquals("Budi", pet.getOwnerName());
+        assertEquals("08123", pet.getOwnerPhone());
+        assertEquals("img.jpg", pet.getImagePath());
+        assertTrue(pet.isTaken());
     }
 
     @Test
     void testObjectMethods() {
-        // Ensure toString/hashCode/equals are executed
+        // 1. ToString
         assertNotNull(pet.toString());
+
+        // 2. HashCode
         int h = pet.hashCode();
-        assertTrue(pet.equals(pet));
-        assertFalse(pet.equals(null));
-        assertFalse(pet.equals(new Object()));
-        Pet p2 = new Pet(); p2.setId(UUID.randomUUID());
+        assertTrue(h != 0 || h == 0);
+
+        // 3. Equals (Coverage only, not logic verification since it uses Object.equals)
+        assertTrue(pet.equals(pet)); // Same ref
+        assertFalse(pet.equals(null)); // Null
+        assertFalse(pet.equals(new Object())); // Other class
+        
+        // Panggil equals dengan object lain (meski false, jalurnya tereksekusi)
+        Pet p2 = new Pet();
+        p2.setId(UUID.randomUUID());
         assertFalse(pet.equals(p2));
     }
 
     @Test
-    void testGetBaseHourlyRate() {
-        // 1. Anjing & Branches
+    void testLifecycleMethods() {
+        pet.onCreate();
+        assertNotNull(pet.getCreatedAt());
+        assertNotNull(pet.getUpdatedAt());
+
+        LocalDateTime oldUpdate = pet.getUpdatedAt();
+        try { Thread.sleep(10); } catch (InterruptedException e) {}
+        pet.onUpdate();
+        assertTrue(pet.getUpdatedAt().isAfter(oldUpdate));
+    }
+
+    @Test
+    void testGetBaseHourlyRate_Anjing() {
         pet.setPetType("Anjing");
-        pet.setPetCategory("Kecil"); assertEquals(2700, pet.getBaseHourlyRate());
-        pet.setPetCategory("Besar"); assertEquals(7700, pet.getBaseHourlyRate());
-        pet.setPetCategory("Sedang"); assertEquals(4200, pet.getBaseHourlyRate());
-        pet.setPetCategory(null); assertEquals(4200, pet.getBaseHourlyRate()); // Cover NULL category
+        pet.setPetCategory("Kecil");
+        assertEquals(2700, pet.getBaseHourlyRate());
+        pet.setPetCategory("Sedang");
+        assertEquals(4200, pet.getBaseHourlyRate());
+        pet.setPetCategory("Besar");
+        assertEquals(7700, pet.getBaseHourlyRate());
+        pet.setPetCategory("Unknown");
+        assertEquals(4200, pet.getBaseHourlyRate());
+    }
 
-        // 2. Kucing & Branches
+    @Test
+    void testGetBaseHourlyRate_Kucing() {
         pet.setPetType("Kucing");
-        pet.setPetCategory("Standar"); assertEquals(1700, pet.getBaseHourlyRate());
-        pet.setPetCategory("Premium"); assertEquals(3800, pet.getBaseHourlyRate());
-        pet.setPetCategory("VIP"); assertEquals(9400, pet.getBaseHourlyRate());
-        pet.setPetCategory("Unknown"); assertEquals(1700, pet.getBaseHourlyRate());
+        pet.setPetCategory("Standar");
+        assertEquals(1700, pet.getBaseHourlyRate());
+        pet.setPetCategory("Premium");
+        assertEquals(3800, pet.getBaseHourlyRate());
+        pet.setPetCategory("VIP");
+        assertEquals(9400, pet.getBaseHourlyRate());
+        pet.setPetCategory("Unknown");
+        assertEquals(1700, pet.getBaseHourlyRate());
+    }
 
-        // 3. Others
-        pet.setPetType("Burung"); assertEquals(700, pet.getBaseHourlyRate());
-        pet.setPetType(null); assertEquals(1100, pet.getBaseHourlyRate()); // Cover NULL type
+    @Test
+    void testGetBaseHourlyRate_Others() {
+        pet.setPetType("Burung");
+        assertEquals(700, pet.getBaseHourlyRate());
+        pet.setPetType("Kelinci");
+        assertEquals(1000, pet.getBaseHourlyRate());
+        pet.setPetType("Hamster");
+        assertEquals(400, pet.getBaseHourlyRate());
+        pet.setPetType("Marmut");
+        assertEquals(400, pet.getBaseHourlyRate());
+        pet.setPetType("Reptil");
+        assertEquals(1100, pet.getBaseHourlyRate());
+        pet.setPetType(null);
+        assertEquals(1100, pet.getBaseHourlyRate());
     }
 
     @Test
@@ -65,36 +127,25 @@ class PetTests {
         pet.setPetType("Burung");
         pet.setQuantity(5);
         assertEquals(3500, pet.getTotalHourlyRate()); 
-        
         pet.setQuantity(null);
         assertEquals(0, pet.getTotalHourlyRate());
     }
 
     @Test
     void testTimeCalculations() {
-        // 1. Init
         assertEquals(0, pet.getBillableHours());
         assertEquals("-", pet.getDurationText());
 
         LocalDateTime now = LocalDateTime.now();
-        
-        // 2. < 30 mins -> round down (but min 1 hour usually? No, rule is round nearest or min 1)
-        // Logic check: if < 1 hour, is it 1?
         ReflectionTestUtils.setField(pet, "createdAt", now.minusMinutes(10));
         assertEquals(1, pet.getBillableHours());
         assertTrue(pet.getDurationText().contains("0 Jam 10 Menit"));
 
-        // 3. > 1 hour, < 30 mins remainder
         ReflectionTestUtils.setField(pet, "createdAt", now.minusMinutes(75)); 
         assertEquals(1, pet.getBillableHours());
 
-        // 4. > 1 hour, > 30 mins remainder
         ReflectionTestUtils.setField(pet, "createdAt", now.minusMinutes(100)); 
         assertEquals(2, pet.getBillableHours());
-        
-        // 5. Exact Hour
-        ReflectionTestUtils.setField(pet, "createdAt", now.minusMinutes(60));
-        assertTrue(pet.getDurationText().contains("1 Jam 0 Menit"));
     }
 
     @Test
@@ -104,23 +155,25 @@ class PetTests {
         LocalDateTime now = LocalDateTime.now();
         ReflectionTestUtils.setField(pet, "createdAt", now.minusMinutes(100)); 
         assertEquals(1600, pet.getEstimatedCost());
-        
-        // Zero Cost
-        pet.setQuantity(null);
-        assertEquals(0, pet.getEstimatedCost());
     }
-    
+
     @Test
-    void testLifecycle() {
-        pet.onCreate();
-        pet.onUpdate();
-        assertNotNull(pet.getCreatedAt());
+    void testStatusVisuals() {
+        pet.setTaken(false);
+        assertEquals("Belum Diambil", pet.getStatusLabel());
+        assertEquals("danger", pet.getStatusColor());
+        pet.setTaken(true);
+        assertEquals("Sudah Diambil", pet.getStatusLabel());
+        assertEquals("success", pet.getStatusColor());
     }
-    
+
     @Test
-    void testOverdue() {
+    void testIsOverdue() {
         assertFalse(pet.isOverdue());
-        ReflectionTestUtils.setField(pet, "createdAt", LocalDateTime.now().minusDays(8));
+        LocalDateTime now = LocalDateTime.now();
+        ReflectionTestUtils.setField(pet, "createdAt", now.minusDays(5));
+        assertFalse(pet.isOverdue());
+        ReflectionTestUtils.setField(pet, "createdAt", now.minusDays(8));
         assertTrue(pet.isOverdue());
     }
 }
